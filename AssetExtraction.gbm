@@ -1,0 +1,11 @@
+{
+    "name" : "AssetExtraction",
+    "version" : "0.0.1",
+    "dependencies" : [
+    ],
+    "files" : [
+        "GroundBranch/Content/GroundBranch/Mission/*/AssetExtraction*.mis",
+        "GroundBranch/Content/GroundBranch/Lua/AssetExtraction.lua",
+        "GroundBranch/Content/Localization/GroundBranch/en/AssetExtraction.csv"
+    ]
+}
