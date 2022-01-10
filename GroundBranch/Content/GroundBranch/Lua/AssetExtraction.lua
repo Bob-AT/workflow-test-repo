@@ -5,6 +5,7 @@ m.StringTables = { "AssetExtraction" }
 m.VipPlayerStarts = {}
 m.ExtractionPoints = {}
 m.ExtractionPointMarkers = {}
+m.VipSpawned = false
 m.VipDead = false
 
 function m:OnCharacterDied(Character, CharacterController, KillerController)
@@ -108,6 +109,7 @@ function m:PreInit()
 
 	--#region New code
 	self.VipPlayerStarts = gameplaystatics.GetAllActorsOfClassWithTag('GroundBranch.GBPlayerStart', 'VipPlayerStart')
+	self.NonVipPlayerStarts = gameplaystatics.GetAllActorsOfClass('GroundBranch.GBInsertionPoint')
 	self.ExtractionPoints = gameplaystatics.GetAllActorsOfClass('/Game/GroundBranch/Props/GameMode/BP_ExtractionPoint.BP_ExtractionPoint_C')
 	--#endregion
 end
@@ -118,6 +120,9 @@ function m:OnRoundStageSet(RoundStage)
 		self.BumRushMode = false
 		self:RandomiseObjectives()
 	elseif RoundStage == "PreRoundWait" then
+		self.VipSpawned = false
+		gamemode.SetTeamAttitude(0, 100, 'Friendly')
+		gamemode.SetTeamAttitude(100, 0, 'Friendly')
 		self:SpawnOpFor()
 		gamemode.SetDefaultRoundStageTime("InProgress", self.Settings.RoundTime.Value)
 		-- need to update this as ops board setting may have changed - have to do this before RoundStage InProgress to be effective
@@ -131,15 +136,36 @@ end
 
 --#region New code
 function m:GetSpawnInfo(PlayerState)
+	--actor.SetTeamId(PlayerState, 1)
 	local insertionPoint = player.GetInsertionPoint(PlayerState)
 	local isVipInsertion = actor.HasTag(insertionPoint, 'VipInsertionPoint')
-	
+
+	print("Insertion point")
+	local item = insertionPoint
+	print(actor.GetName(item) .. " " .. table.concat(actor.GetTags(item), ", "))
+
+	local x = gameplaystatics.GetAllActorsOfClass('GroundBranch.GBPlayerStart')
+	for _i, item in ipairs(x) do
+		print(actor.GetName(item) .. " " .. table.concat(actor.GetTags(item), ", "))
+	end
+	print("-- Done")
+
+	actor.RemoveTag(PlayerState, 'VIP')
+
 	if not isVipInsertion then
-		actor.RemoveTag(PlayerState, 'VIP')
 		return nil
 	end
 
+	if self.VipSpawned then
+		print("Tagging " .. player.GetName(PlayerState) .. " as not VIP")
+		player.SetInsertionPoint(PlayerState, self.NonVipPlayerStarts[1])
+		return nil
+	end
+
+	m.VipSpawned = true
+
 	print("Tagging " .. player.GetName(PlayerState) .. " as VIP")
+	-- actor.SetTeamId(PlayerState, 0) (to allow TK-ing, but needs to be reset)
 	actor.AddTag(PlayerState, 'VIP')
 	local i = #self.VipPlayerStarts
 	return self.VipPlayerStarts[ umath.random(i) ]
