@@ -19,6 +19,7 @@
 !GroundBranch/Content/GroundBranch/DefaultLoadouts/*.kit
 ## Manifest files
 !*.gbm
+!*.py
 
 # Ground Branch default files that would otherwise be included
 ## Default GameMode scripts
