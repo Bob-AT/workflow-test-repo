@@ -39,7 +39,7 @@ def process_file(filename_prefix):
     print("Processing " + filename_prefix)
     for variation_list in VARIATIONS:
         i = i + 1
-        data = load_kit(filename_prefix + '1.kit')
+        data = load_kit(filename_prefix + '-template.json')
 
         for (type, item, skin) in variation_list:
             for obj in data['Data']:
