@@ -16,6 +16,8 @@
 !GroundBranch/Content/Localization/GroundBranch/en/*.csv
 ## Loadout files
 !GroundBranch/Content/GroundBranch/AI/Loadouts/*/*.kit
+!GroundBranch/Content/GroundBranch/AI/Loadouts/*/*.py
+!GroundBranch/Content/GroundBranch/AI/Loadouts/*/*.json
 !GroundBranch/Content/GroundBranch/DefaultLoadouts/*.kit
 ## Manifest files
 !*.gbm

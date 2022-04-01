@@ -51,7 +51,7 @@ def process_file(filename_prefix):
 
         outfile_name = filename_prefix + str(i) + '.kit'
         print('Writing ' + outfile_name)
-        with open(outfile_name, 'w') as outfile:
+        with open(outfile_name, 'w', newline='\n') as outfile:
             outfile.write(json.dumps(data, indent=4))
             outfile.write("\n")
 
