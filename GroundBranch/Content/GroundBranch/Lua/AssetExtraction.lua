@@ -1,6 +1,14 @@
 -- WIP
 
-local m = require('TerroristHunt')
+local Tables = require("Common.Tables")
+local Method = require("Common.Method")
+
+
+print("VERSION: ")
+print(_VERSION)
+
+
+local m = Tables.DeepCopy(require('TerroristHunt'))
 m.StringTables = { "AssetExtraction" }
 m.VipPlayerStarts = {}
 m.ExtractionPoints = {}
@@ -17,6 +25,9 @@ function m:OnCharacterDied(Character, CharacterController, KillerController)
 				player.SetLives(CharacterController, player.GetLives(CharacterController) - 1)
 				--#region New code
 				local ps = player.GetPlayerState(CharacterController)
+				if actor.HasTag(CharacterController, 'VIP') then
+					print("VIP dead!!!!")
+				end
 				if ps and actor.HasTag(ps, 'VIP') then
 					print('VIP KIA!')
 					self.VipDead = true

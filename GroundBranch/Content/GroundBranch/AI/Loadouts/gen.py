@@ -22,10 +22,6 @@ VARIATIONS=[
     [('Shirt', 'Shirt:BP_Shirt_ButtonUp', 'Tan'),('Pants', 'Pants:BP_Pants_Jeans', 'Black')]
 ]
 
-
-PREFIX_LIST=['Civ']
-
-
 import json
 
 def load_kit(name):
@@ -56,7 +52,7 @@ def process_file(filename_prefix):
             outfile.write("\n")
 
 def main():
-    prefix_list=['Civ', 'Tango_AR', 'Tango_SMG', 'Tango_SNP', 'Tango_STG', 'Tango_HDG']
+    prefix_list=['Narcos/Civ', 'Narcos/Tango_AR', 'Narcos/Tango_SMG', 'Narcos/Tango_SNP', 'Narcos/Tango_STG', 'Narcos/Tango_HDG']
     for filename_prefix in prefix_list:
         process_file(filename_prefix)
 

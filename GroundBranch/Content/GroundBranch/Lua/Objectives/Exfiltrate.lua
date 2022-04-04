@@ -49,6 +49,7 @@ function Exfiltrate:Create(
     self.ExfilTimer.DefaultTime = timeToExfil or Exfiltrate.ExfilTimer.DefaultTime
     self.ExfilTimer.TimeStep = timeStep or Exfiltrate.ExfilTimer.TimeStep
 	self.Points.All = {}
+	self.ExfilDone = false
 	local allExtractionPoints = gameplaystatics.GetAllActorsOfClass(
 		'/Game/GroundBranch/Props/GameMode/BP_ExtractionPoint.BP_ExtractionPoint_C'
 	)
@@ -76,6 +77,15 @@ end
 ---Resets the object attributes to default values. Should be called before every round.
 function Exfiltrate:Reset()
 	self.PlayersIn = 0
+	self.ExfilDone = false
+end
+
+function Exfiltrate:GetCompletedObjectives()
+	if self.ExfilDone then
+		return {'ExfiltrateBluFor'}
+	else
+		return {}
+	end
 end
 
 ---Randomly selects the extraction point that should be active in the given round.
@@ -164,6 +174,9 @@ end
 ---cancels the exfiltration.
 function Exfiltrate:CheckExfilTimer()
 	if self.ExfilTimer.CurrentTime <= 0 then
+		if self.Team:GetAlivePlayersCount() > 0 then
+			self.ExfilDone = true
+		end
 		self.OnObjectiveCompleteFunc(self.OnObjectiveCompleteFuncOwner)
 		timer.Clear(self, self.ExfilTimer.Name)
 		self.ExfilTimer.CurrentTime = self.ExfilTimer.DefaultTime

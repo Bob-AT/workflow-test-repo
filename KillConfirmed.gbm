@@ -8,6 +8,7 @@
         "GroundBranch/Content/GroundBranch/Mission/*/KillConfirmed*.mis",
         "GroundBranch/Content/GroundBranch/Lua/KillConfirmed.lua",
         "GroundBranch/Content/GroundBranch/Lua/KillConfirmedSemiPermissive.lua",
-        "GroundBranch/Content/Localization/GroundBranch/en/KillConfirmed.csv"
+        "GroundBranch/Content/Localization/GroundBranch/en/KillConfirmed.csv",
+        "GroundBranch/Content/GroundBranch/DefaultLoadouts/KillConfirmedSemiPermissive.kit"
     ]
 }

@@ -1,36 +1,95 @@
-local m = require("KillConfirmed")
+local Tables = require("Common.Tables")
+local AvoidFatality = require("Objectives.AvoidFatality")
+local NoSoftFail = require("Objectives.NoSoftFail")
 
-function m:OnRoundStageSet(RoundStage)
-	print('Started round stage ' .. RoundStage)
-	timer.ClearAll()
-	if RoundStage == 'WaitingForReady' then
-		self:PreRoundCleanUp()
-		self.Objectives.Exfiltrate:SelectPoint(false)
-		self.Objectives.ConfirmKill:ShuffleSpawns()
-		timer.Set(
-			self.Timers.SettingsChanged.Name,
-			self,
-			self.CheckIfSettingsChanged,
-			self.Timers.SettingsChanged.TimeStep,
-			true
-		)
-	elseif RoundStage == 'PreRoundWait' then
-		gamemode.SetTeamAttitude(1, 10, 'Neutral')
-		gamemode.SetTeamAttitude(10, 1, 'Neutral')
-		gamemode.SetTeamAttitude(10, 100, 'Friendly')
-		gamemode.SetTeamAttitude(100, 10, 'Friendly')
-	
-		self:SetUpOpForStandardSpawns()
-		self:SpawnOpFor()
-	elseif RoundStage == 'InProgress' then
-		self.PlayerTeams.BluFor.Script:RoundStart(
-			self.Settings.RespawnCost.Value,
-			self.Settings.DisplayScoreMessage.Value == 1,
-			self.Settings.DisplayScoreMilestones.Value == 1,
-			self.Settings.DisplayObjectiveMessages.Value == 1,
-			self.Settings.DisplayObjectivePrompts.Value == 1
-		)
+local super = Tables.DeepCopy(require("KillConfirmed"))
+super.PlayerTeams.BluFor.Loadout='KillConfirmedSemiPermissive'
+super.Settings.RespawnCost.Value = 100000
+super.PlayerScoreTypes.CollateralDamage = {
+	Score = -250,
+	OneOff = false,
+	Description = 'Killed a non-combatant'
+}
+super.Objectives.AvoidFatality = AvoidFatality.new('NoCollateralDamage')
+super.Objectives.NoSoftFail = NoSoftFail.new()
+super.CollateralDamageThreshold = 3
+
+local KillConfirmedSP = setmetatable({}, { __index = super })
+
+function KillConfirmedSP:PostInit()
+	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'NeutralizeHVTs', 1)
+	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'ConfirmEliminatedHVTs', 1)
+	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'NoCollateralDamage', 1)
+	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'ExfiltrateBluFor', 1)
+end
+
+function KillConfirmedSP:OnRoundStageSet(RoundStage)
+	if RoundStage == 'PostRoundWait' or RoundStage == 'TimeLimitReached' then
+		gamemode.BroadcastGameMessage('Blank', 'Center', -1)
+	end
+	super.OnRoundStageSet(self, RoundStage)
+end
+
+function KillConfirmedSP:PreRoundCleanUp()
+	super.PreRoundCleanUp(self)
+	gamemode.SetTeamAttitude(1, 10, 'Neutral')
+	gamemode.SetTeamAttitude(10, 1, 'Neutral')
+	gamemode.SetTeamAttitude(10, 100, 'Friendly')
+	gamemode.SetTeamAttitude(100, 10, 'Friendly')
+end
+
+function KillConfirmedSP:OnCharacterDied(Character, CharacterController, KillerController)
+	local goodKill = true
+
+	if gamemode.GetRoundStage() == 'PreRoundWait' or gamemode.GetRoundStage() == 'InProgress'
+	then
+		if CharacterController ~= nil then
+			local killedTeam = actor.GetTeamId(CharacterController)
+			local killerTeam = nil
+			if KillerController ~= nil then
+				killerTeam = actor.GetTeamId(KillerController)
+			end
+			if killedTeam == 10 and killerTeam == self.PlayerTeams.BluFor.TeamId then
+				self.Objectives.AvoidFatality:ReportFatality()
+				self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'CollateralDamage')
+
+				local message = 'Collateral damage by ' .. player.GetName(KillerController)
+				self.PlayerTeams.BluFor.Script:DisplayMessageToAllPlayers(message, 'Engine', 5.0, 'ScoreMilestone')
+
+				goodKill = false
+				if self.Objectives.AvoidFatality:GetFatalityCount() >= self.CollateralDamageThreshold then
+					self.Objectives.NoSoftFail:Fail()
+					self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('SoftFail', 'Upper', 10.0, 'Always')
+				end
+			end
+		end
+	end
+
+	if goodKill then
+		super.OnCharacterDied(self, Character, CharacterController, KillerController)
 	end
 end
 
-return m
+function KillConfirmedSP:OnExfiltrated()
+	if gamemode.GetRoundStage() ~= 'InProgress' then
+		return
+	end
+	-- Award surviving players
+	local alivePlayers = self.PlayerTeams.BluFor.Script:GetAlivePlayers()
+	for _, alivePlayer in ipairs(alivePlayers) do
+		self.PlayerTeams.BluFor.Script:AwardPlayerScore(alivePlayer, 'Survived')
+	end
+
+	-- Prepare summary
+	self:UpdateCompletedObjectives()
+	if self.Objectives.NoSoftFail:IsOK() then
+		gamemode.AddGameStat('Summary=HVTsConfirmed')
+		gamemode.AddGameStat('Result=Team1')
+	else
+		gamemode.AddGameStat('Summary=SoftFail')
+		gamemode.AddGameStat('Result=None')
+	end
+	gamemode.SetRoundStage('PostRoundWait')
+end
+
+return KillConfirmedSP

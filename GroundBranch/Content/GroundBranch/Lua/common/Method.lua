@@ -21,11 +21,13 @@ Method.__index = Method
 ---         return (x + y) * self.z
 ---     end
 ---
----     Obj1:Foo(1,2) -- result 30
+---     assert(Obj1:Foo(1,2) == 30)
+---
 ---     Method.Extend(Obj1, 'Foo', function(self, super, x, y)
 ---         return super(x, y) / self.z
 ---     end)
----     Obj1:Foo(1,2) -- result 3
+---
+---     assert(Obj1:Foo(1,2) == 3)
 ---
 function Method.Extend(obj, name, new_method)
     local original = obj[name]
