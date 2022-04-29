@@ -50,13 +50,13 @@ function KillConfirmedSP:OnCharacterDied(Character, CharacterController, KillerC
 				killerTeam = actor.GetTeamId(KillerController)
 			end
 			if killedTeam == 10 and killerTeam == self.PlayerTeams.BluFor.TeamId then
+				goodKill = false
 				self.Objectives.AvoidFatality:ReportFatality()
 				self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'CollateralDamage')
 
 				local message = 'Collateral damage by ' .. player.GetName(KillerController)
 				self.PlayerTeams.BluFor.Script:DisplayMessageToAllPlayers(message, 'Engine', 5.0, 'ScoreMilestone')
 
-				goodKill = false
 				if self.Objectives.AvoidFatality:GetFatalityCount() >= self.CollateralDamageThreshold then
 					self.Objectives.NoSoftFail:Fail()
 					self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('SoftFail', 'Upper', 10.0, 'Always')

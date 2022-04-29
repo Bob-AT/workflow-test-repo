@@ -557,7 +557,8 @@ end
 function KillConfirmed:PreRoundCleanUp()
 	ai.CleanUp(self.HVT.Tag)
 	ai.CleanUp(self.AiTeams.OpFor.Tag)
-	for _, objective in ipairs(self.Objectives) do
+	for name, objective in pairs(self.Objectives) do
+		print("Resetting " .. name)
 		objective:Reset()
 	end
 end

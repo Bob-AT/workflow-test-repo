@@ -23,6 +23,19 @@ print(Obj1.State.X)
 
 print(Obj3:Foo())
 
+xx = {A = 100, B= 200 }
+xx = {100,200,300}
+xx[1]= 'xxx'
+
+for k,v in ipairs(xx) do
+    print("IP " .. k .. '->' .. v)
+end
+
+for k,v in pairs(xx) do
+    print("P  " .. k .. '->' .. v)
+end
+
+print('done')
 --local Tables = require("Common.Tables")
 --
 --local super = Tables.DeepCopy(require("KillConfirmed"))
