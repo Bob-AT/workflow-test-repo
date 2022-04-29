@@ -1,19 +1,42 @@
+--[[
+Kill Confirmed (Semi-Permissive)
+PvE Ground Branch game mode by Bob/AT
+
+https://github.com/JakBaranowski/ground-branch-game-modes/issues/26
+
+Notes for Mission Editing:
+
+  1. Start with a regular 'Kill Confirmed' mission
+  2. Add non-combatants
+  - use team id = 10
+  - one of the unarmed 'Civ*' kits)
+]]--
+
 local Tables = require("Common.Tables")
 local AvoidFatality = require("Objectives.AvoidFatality")
 local NoSoftFail = require("Objectives.NoSoftFail")
 
+-- Create a deep copy of the singleton
 local super = Tables.DeepCopy(require("KillConfirmed"))
+
+-- Use a separate loadout
 super.PlayerTeams.BluFor.Loadout='KillConfirmedSemiPermissive'
 super.Settings.RespawnCost.Value = 100000
+
+-- Add new score type
 super.PlayerScoreTypes.CollateralDamage = {
 	Score = -250,
 	OneOff = false,
 	Description = 'Killed a non-combatant'
 }
+-- Add additional objectives
 super.Objectives.AvoidFatality = AvoidFatality.new('NoCollateralDamage')
 super.Objectives.NoSoftFail = NoSoftFail.new()
+
+-- The max. amount of collateral damage before failing the mission
 super.CollateralDamageThreshold = 3
 
+-- Our sub-class of the singleton
 local KillConfirmedSP = setmetatable({}, { __index = super })
 
 function KillConfirmedSP:PostInit()
@@ -25,6 +48,7 @@ end
 
 function KillConfirmedSP:OnRoundStageSet(RoundStage)
 	if RoundStage == 'PostRoundWait' or RoundStage == 'TimeLimitReached' then
+		-- Make sure the 'SOFT FAIL' message is cleared
 		gamemode.BroadcastGameMessage('Blank', 'Center', -1)
 	end
 	super.OnRoundStageSet(self, RoundStage)
