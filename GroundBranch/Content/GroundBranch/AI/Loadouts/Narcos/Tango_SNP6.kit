@@ -15,7 +15,23 @@
             "Data": [
                 {
                     "Type": "PrimaryFirearm",
-                    "Item": "PrimaryFirearm:BP_FNFAL_Tactical"
+                    "Item": "PrimaryFirearm:BP_G3A3",
+                    "Children": [
+                        {
+                            "Item": "Magazine:BP_G3A3_Magazine",
+                            "Well": "G3MagWell",
+                            "BulletId": "Bullet:BP_762x51mmNATO_FMJ"
+                        },
+                        {
+                            "Item": "Attachment:BP_G3_RailAdapter",
+                            "Children": [
+                                {
+                                    "Item": "Sight:BP_Optical_ACOG_TA31",
+                                    "Rail": "GBRail"
+                                }
+                            ]
+                        }
+                    ]
                 }
             ]
         },
