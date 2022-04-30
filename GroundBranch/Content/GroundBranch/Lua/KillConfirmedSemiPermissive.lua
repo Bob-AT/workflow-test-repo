@@ -23,8 +23,13 @@ local super = Tables.DeepCopy(require("KillConfirmed"))
 super.PlayerTeams.BluFor.Loadout='KillConfirmedSemiPermissive'
 super.Settings.RespawnCost.Value = 100000
 
--- Add new score type
+-- Add new score types
 super.PlayerScoreTypes.CollateralDamage = {
+	Score = -250,
+	OneOff = false,
+	Description = 'Killed a non-combatant'
+}
+super.TeamScoreTypes.CollateralDamage = {
 	Score = -250,
 	OneOff = false,
 	Description = 'Killed a non-combatant'
@@ -77,6 +82,7 @@ function KillConfirmedSP:OnCharacterDied(Character, CharacterController, KillerC
 				goodKill = false
 				self.Objectives.AvoidFatality:ReportFatality()
 				self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'CollateralDamage')
+				self.PlayerTeams.BluFor.Script:AwardTeamScore('CollateralDamage')
 
 				local message = 'Collateral damage by ' .. player.GetName(KillerController)
 				self.PlayerTeams.BluFor.Script:DisplayMessageToAllPlayers(message, 'Engine', 5.0, 'ScoreMilestone')
