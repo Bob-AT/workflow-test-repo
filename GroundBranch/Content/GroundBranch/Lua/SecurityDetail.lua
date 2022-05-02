@@ -11,25 +11,39 @@ Notes for Mission Editing:
 
 ]]--
 
-local MTeams                = require('Players.Teams')
-local MSpawnsGroups         = require('Spawns.Groups')
-local MSpawnsCommon         = require('Spawns.Common')
-local MObjectiveExfiltrate  = require('Objectives.Exfiltrate')
-local MObjectiveConfirmKill = require('Objectives.ConfirmKill')
+local Teams = require('Players.Teams')
+local SpawnsGroups = require('Spawns.Groups')
+local SpawnsCommon = require('Spawns.Common')
+local ObjectiveExfiltrate = require('Objectives.Exfiltrate')
+local Logger = require("Common.Logger")
+local AvoidFatality = require("Objectives.AvoidFatality")
+local NoSoftFail = require("Objectives.NoSoftFail")
+
+local SCENARIO_OFFSET = 2
+
+local log = Logger.new('SecDet')
+log:SetLogLevel('DEBUG')
+
 
 --#region Properties
 
-local KillConfirmed = {
+local Mode = {
 	UseReadyRoom = true,
 	UseRounds = true,
 	MissionTypeDescription = '[Solo/Co-Op] Extract the principal',
 	StringTables = {'SecurityDetail'},
 	Settings = {
-		HVTCount = {
-			Min = 1,
-			Max = 5,
+		Scenario = {
+			Min = 0,
+			Max = 10, -- hard max
+			Value = 0,
+			AdvancedSetting = true,
+		},
+		AvailableForces = {
+			Min = 0,
+			Max = 2,
 			Value = 1,
-			AdvancedSetting = false,
+			AdvancedSetting = false
 		},
 		OpForPreset = {
 			Min = 0,
@@ -48,37 +62,7 @@ local KillConfirmed = {
 			Max = 60,
 			Value = 60,
 			AdvancedSetting = false,
-		},
-		RespawnCost = {
-			Min = 0,
-			Max = 10000,
-			Value = 1000,
-			AdvancedSetting = true,
-		},
-		DisplayScoreMessage = {
-			Min = 0,
-			Max = 1,
-			Value = 0,
-			AdvancedSetting = true,
-		},
-		DisplayScoreMilestones = {
-			Min = 0,
-			Max = 1,
-			Value = 1,
-			AdvancedSetting = true,
-		},
-		DisplayObjectiveMessages = {
-			Min = 0,
-			Max = 1,
-			Value = 1,
-			AdvancedSetting = true,
-		},
-		DisplayObjectivePrompts = {
-			Min = 0,
-			Max = 1,
-			Value = 1,
-			AdvancedSetting = true,
-		},
+		}
 	},
 	PlayerScoreTypes = {
 		KillStandard = {
@@ -132,7 +116,7 @@ local KillConfirmed = {
 	PlayerTeams = {
 		BluFor = {
 			TeamId = 1,
-			Loadout = 'NoTeam',
+			Loadout = 'NoTeamCamouflage',
 			Script = nil
 		},
 	},
@@ -144,11 +128,8 @@ local KillConfirmed = {
 		},
 	},
 	Objectives = {
-		ConfirmKill = nil,
+		ProtectVIP = nil,
 		Exfiltrate = nil,
-	},
-	HVT = {
-		Tag = 'HVT',
 	},
 	Timers = {
 		-- Delays
@@ -169,87 +150,162 @@ local KillConfirmed = {
 			TimeStep = 0.5,
 		},
 	},
+	InsertionPoints = {
+		All = {},
+		VipEscortScenario = {},
+		VipExfilScenario = {},
+		AnyVipScenario = {},
+		NonVip = {}
+	},
+	ExfilTagToExfils = {},
+	ActiveVipInsertionPoint = nil,
+	VipPlayerId = nil,
+	-- Whether we have non-combatants in the AO
+	IsSemiPermissive = false,
+	-- The max. amount of collateral damage before failing the mission
+	CollateralDamageThreshold = 3,
+	-- Ref. to logger
+	Logger = log
 }
 
 --#endregion
 
+--#region Helpers
+function ArrayItemsWithPrefix(array, prefix)
+	local len = #prefix
+	local result = {}
+	for _, item in ipairs(array) do
+		if string.sub(tostring(item), 1, len) == prefix then
+			table.insert(result, item)
+		end
+	end
+	return result
+end
+
+function PickRandom(tbl)
+	local len = #tbl
+
+	if len == 0 then
+		return nil
+	end
+
+	return tbl[math.random(len)]
+end
+--#endregion
+
 --#region Preparation
 
-function KillConfirmed:PreInit()
-	print('Pre initialization')
-	print('Initializing Kill Confirmed')
-	self.PlayerTeams.BluFor.Script = MTeams:Create(
+function Mode:PreInit()
+	log:Debug('PreInit')
+
+	if self.IsSemiPermissive then
+		self.Objectives.AvoidFatality = AvoidFatality.new('NoCollateralDamage')
+	else
+		self.Objectives.AvoidFatality = AvoidFatality.new(nil)
+	end
+	self.Objectives.NoSoftFail = NoSoftFail.new()
+
+	self.PlayerTeams.BluFor.Script = Teams:Create(
 		1,
 		false,
 		self.PlayerScoreTypes,
 		self.TeamScoreTypes
 	)
 	-- Gathers all OpFor spawn points by groups
-	self.AiTeams.OpFor.Spawns = MSpawnsGroups:Create()
-	-- Gathers all HVT spawn points
-	self.Objectives.ConfirmKill = MObjectiveConfirmKill:Create(
-		self,
-		self.OnAllKillsConfirmed,
-		self.PlayerTeams.BluFor.Script,
-		self.HVT.Tag,
-		self.Settings.HVTCount.Value
-	)
+	self.AiTeams.OpFor.Spawns = SpawnsGroups:Create()
 	-- Gathers all extraction points placed in the mission
-	self.Objectives.Exfiltrate = MObjectiveExfiltrate:Create(
+	self.Objectives.Exfiltrate = ObjectiveExfiltrate:Create(
 		self,
 		self.OnExfiltrated,
 		self.PlayerTeams.BluFor.Script,
 		5.0,
 		1.0
 	)
-	-- Set maximum HVT count and ensure that HVT value is within limit
-	self.Settings.HVTCount.Max = math.min(
-		ai.GetMaxCount(),
-		self.Objectives.ConfirmKill:GetAllSpawnPointsCount()
-	)
-	self.Settings.HVTCount.Value = math.min(
-		self.Settings.HVTCount.Value,
-		self.Settings.HVTCount.Max
-	)
+	self.Objectives.ProtectVIP = AvoidFatality.new('ProtectVIP')
+
+	for _, ip in ipairs(gameplaystatics.GetAllActorsOfClass('GroundBranch.GBInsertionPoint')) do
+		getmetatable(ip).__tostring = function(obj)
+			return actor.GetName(obj)
+		end
+
+		if not actor.HasTag('DummyIP') then
+			table.insert(self.InsertionPoints.All, ip)
+
+			if actor.HasTag(ip, 'VIP-Exfil') then
+				table.insert(self.InsertionPoints.VipExfilScenario, ip)
+			elseif actor.HasTag(ip, 'VIP-Escort') then
+				table.insert(self.InsertionPoints.VipEscortScenario, ip)
+			else
+				table.insert(self.InsertionPoints.NonVip, ip)
+			end
+		end
+	end
+
+	for _, ip in ipairs(self.InsertionPoints.VipExfilScenario) do
+		table.insert(self.InsertionPoints.AnyVipScenario, ip)
+	end
+
+	for _, ip in ipairs(self.InsertionPoints.VipEscortScenario) do
+		table.insert(self.InsertionPoints.AnyVipScenario, ip)
+	end
+
+	if #self.InsertionPoints.AnyVipScenario < 10 then
+		self.Settings.Scenario.Max = SCENARIO_OFFSET + #self.InsertionPoints.AnyVipScenario
+	end
+
+	self.ExfilTagToExfils = {}
+
+	for idx, ip in ipairs(self.Objectives.Exfiltrate.Points.All) do
+		local tags = ArrayItemsWithPrefix(actor.GetTags(ip), 'Exfil-')
+		for _, tag in ipairs(tags) do
+			if not self.ExfilTagToExfils[tag] then
+				self.ExfilTagToExfils[tag] = {}
+			end
+			local item = {Index = idx, Actor = ip}
+			table.insert(self.ExfilTagToExfils[tag], item)
+		end
+	end
+
+	log:Debug('ExfilTags', self.ExfilTagToExfils)
 end
 
-function KillConfirmed:PostInit()
-	print('Post initialization')
-	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'NeutralizeHVTs', 1)
-	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'ConfirmEliminatedHVTs', 1)
-    print('Added Kill Confirmation objectives')
+function Mode:PostInit()
+	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'ProtectVIP', 1)
+	if self.IsSemiPermissive then
+		gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'NoCollateralDamage', 1)
+	end
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'ExfiltrateBluFor', 1)
-	print('Added exfiltration objective')
 end
 
 --#endregion
 
 --#region Common
 
-function KillConfirmed:OnRoundStageSet(RoundStage)
-	print('Started round stage ' .. RoundStage)
+function Mode:OnRoundStageSet(RoundStage)
+	log:Debug('Started round stage', RoundStage)
+
 	timer.ClearAll()
 	if RoundStage == 'WaitingForReady' then
+		self.VipPlayerId = '?none?'
 		self:PreRoundCleanUp()
-		self.Objectives.Exfiltrate:SelectPoint(false)
-		self.Objectives.ConfirmKill:SetHvtCount(self.Settings.HVTCount.Value)
-		self.Objectives.ConfirmKill:ShuffleSpawns()
+		self:RandomizeObjectives()
 	elseif RoundStage == 'PreRoundWait' then
 		self:SetUpOpForStandardSpawns()
 		self:SpawnOpFor()
 	elseif RoundStage == 'InProgress' then
+		self.PlayerTeams.BluFor.Script:DisplayMessageToAllPlayers('Protect the VIP', 'Engine', 5.0, 'Always')
+		self.Objectives.Exfiltrate:SelectedPointSetActive(true)
 		self.PlayerTeams.BluFor.Script:RoundStart(
-			self.Settings.RespawnCost.Value,
-			self.Settings.DisplayScoreMessage.Value == 1,
-			self.Settings.DisplayScoreMilestones.Value == 1,
-			self.Settings.DisplayObjectiveMessages.Value == 1,
-			self.Settings.DisplayObjectivePrompts.Value == 1
+			10000,
+			false,
+			false,
+			true,
+			false
 		)
 	end
 end
 
-function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerController)
-	print('OnCharacterDied')
+function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 	if
 		gamemode.GetRoundStage() == 'PreRoundWait' or
 		gamemode.GetRoundStage() == 'InProgress'
@@ -260,28 +316,49 @@ function KillConfirmed:OnCharacterDied(Character, CharacterController, KillerCon
 			if KillerController ~= nil then
 				killerTeam = actor.GetTeamId(KillerController)
 			end
-			if actor.HasTag(CharacterController, self.HVT.Tag) then
-				self.Objectives.ConfirmKill:Neutralized(Character, KillerController)
-			elseif actor.HasTag(CharacterController, self.AiTeams.OpFor.Tag) then
-				print('OpFor standard eliminated')
-				if killerTeam == self.PlayerTeams.BluFor.TeamId then
+			if actor.HasTag(CharacterController, self.AiTeams.OpFor.Tag) then
+				if killedTeam == 10 and killerTeam == self.PlayerTeams.BluFor.TeamId then
+					self.Objectives.AvoidFatality:ReportFatality()
+					self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'CollateralDamage')
+					self.PlayerTeams.BluFor.Script:AwardTeamScore('CollateralDamage')
+
+					local message = 'Collateral damage by player ' .. player.GetName(KillerController)
+					self.PlayerTeams.BluFor.Script:DisplayMessageToAllPlayers(message, 'Engine', 5.0, 'Always')
+
+					if self.Objectives.AvoidFatality:GetFatalityCount() >= self.CollateralDamageThreshold then
+						self.Objectives.NoSoftFail:Fail()
+						self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('SoftFail', 'Upper', 10.0, 'Always')
+					end
+				elseif killerTeam == self.PlayerTeams.BluFor.TeamId then
 					self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'KillStandard')
 				end
 			else
 				print('BluFor eliminated')
+
 				if CharacterController == KillerController then
 					self.PlayerTeams.BluFor.Script:AwardPlayerScore(CharacterController, 'Accident')
 				elseif killerTeam == killedTeam then
 					self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'TeamKill')
 				end
+
 				self.PlayerTeams.BluFor.Script:PlayerDied(CharacterController, Character)
-				timer.Set(
-					self.Timers.CheckBluForCount.Name,
-					self,
-					self.CheckBluForCountTimer,
-					self.Timers.CheckBluForCount.TimeStep,
-					false
-				)
+
+				local ps = player.GetPlayerState ( CharacterController )
+				if player.GetName(ps) == self.VipPlayerId then
+					self.Objectives.ProtectVIP:ReportFatality()
+				end
+
+				if self.PlayerTeams.BluFor.Script:IsWipedOut() then
+					self:CheckBluForCountTimer()
+				else
+					timer.Set(
+							self.Timers.CheckBluForCount.Name,
+							self,
+							self.CheckBluForCountTimer,
+							self.Timers.CheckBluForCount.TimeStep,
+							false
+					)
+				end
 			end
 		end
 	end
@@ -291,9 +368,9 @@ end
 
 --#region Player Status
 
-function KillConfirmed:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
-	print('PlayerInsertionPointChanged')
-	if InsertionPoint == nil then
+function Mode:PlayerInsertionPointChanged(PlayerState, ip)
+	--print('PlayerInsertionPointChanged')
+	if ip == nil then
 		-- Player unchecked insertion point.
 		timer.Set(
 			self.Timers.CheckReadyDown.Name,
@@ -311,11 +388,20 @@ function KillConfirmed:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
 			self.Timers.CheckReadyUp.TimeStep,
 			false
 		)
+
+		if self:IsVipInsertionPoint(ip) then
+			self.VipPlayerId = player.GetName(PlayerState)
+			log:Info('VIP Player:', self.VipPlayerId)
+		end
 	end
 end
 
-function KillConfirmed:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
-	print('PlayerReadyStatusChanged ' .. ReadyStatus)
+function Mode:IsVipInsertionPoint(ip)
+	return actor.HasTag(ip, 'VIP-Escort') or actor.HasTag(ip, 'VIP-Exfil')
+end
+
+function Mode:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
+	--print('PlayerReadyStatusChanged ' .. ReadyStatus)
 	if ReadyStatus ~= 'DeclaredReady' then
 		-- Player declared ready.
 		timer.Set(
@@ -334,7 +420,7 @@ function KillConfirmed:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
 	end
 end
 
-function KillConfirmed:CheckReadyUpTimer()
+function Mode:CheckReadyUpTimer()
 	if
 		gamemode.GetRoundStage() == 'WaitingForReady' or
 		gamemode.GetRoundStage() == 'ReadyCountdown'
@@ -349,7 +435,7 @@ function KillConfirmed:CheckReadyUpTimer()
 	end
 end
 
-function KillConfirmed:CheckReadyDownTimer()
+function Mode:CheckReadyDownTimer()
 	if gamemode.GetRoundStage() == 'ReadyCountdown' then
 		local ReadyPlayerTeamCounts = gamemode.GetReadyPlayerTeamCounts(true)
 		if ReadyPlayerTeamCounts[self.PlayerTeams.BluFor.TeamId] < 1 then
@@ -358,16 +444,11 @@ function KillConfirmed:CheckReadyDownTimer()
 	end
 end
 
-function KillConfirmed:ShouldCheckForTeamKills()
-	print('ShouldCheckForTeamKills')
-	if gamemode.GetRoundStage() == 'InProgress' then
-		return true
-	end
-	return false
+function Mode:ShouldCheckForTeamKills()
+	return (gamemode.GetRoundStage() == 'InProgress')
 end
 
-function KillConfirmed:PlayerCanEnterPlayArea(PlayerState)
-	print('PlayerCanEnterPlayArea')
+function Mode:PlayerCanEnterPlayArea(PlayerState)
 	if
 		gamemode.GetRoundStage() == 'InProgress' or
 		player.GetInsertionPoint(PlayerState) ~= nil
@@ -377,21 +458,9 @@ function KillConfirmed:PlayerCanEnterPlayArea(PlayerState)
 	return false
 end
 
-function KillConfirmed:GetSpawnInfo(PlayerState)
-	print('GetSpawnInfo')
-	if gamemode.GetRoundStage() == 'InProgress' then
-		self.PlayerTeams.BluFor.Script:RespawnCleanUp(PlayerState)
-	end
-end
-
-function KillConfirmed:PlayerEnteredPlayArea(PlayerState)
-	print('PlayerEnteredPlayArea')
-	player.SetInsertionPoint(PlayerState, nil)
-end
-
-function KillConfirmed:LogOut(Exiting)
-	print('Player left the game ')
-	print(Exiting)
+function Mode:LogOut(Exiting)
+	--print('Player left the game ')
+	--print(Exiting)
 	if
 		gamemode.GetRoundStage() == 'PreRoundWait' or
 		gamemode.GetRoundStage() == 'InProgress'
@@ -410,74 +479,49 @@ end
 
 --#region Spawns
 
-function KillConfirmed:SetUpOpForStandardSpawns()
-	print('Setting up AI spawn points by groups')
+function Mode:SetUpOpForStandardSpawns()
+	--print('Setting up AI spawns by groups')
 	local maxAiCount = math.min(
-		self.AiTeams.OpFor.Spawns.Total,
-		ai.GetMaxCount() - self.Settings.HVTCount.Value
+			self.AiTeams.OpFor.Spawns:GetTotalSpawnPointsCount(),
+			ai.GetMaxCount()
 	)
-	self.AiTeams.OpFor.CalculatedAiCount = MSpawnsCommon.GetAiCountWithDeviationPercent(
-		5,
-		maxAiCount,
-		gamemode.GetPlayerCount(true),
-		5,
-		self.Settings.OpForPreset.Value,
-		5,
-		0.1
+	self.AiTeams.OpFor.CalculatedAiCount = SpawnsCommon.GetAiCountWithDeviationPercent(
+			5,
+			maxAiCount,
+			gamemode.GetPlayerCount(true),
+			5,
+			self.Settings.OpForPreset.Value,
+			5,
+			0.1
 	)
 	local missingAiCount = self.AiTeams.OpFor.CalculatedAiCount
-	-- Select groups guarding the HVTs and add their spawn points to spawn list
-	local maxAiCountPerHvtGroup = math.floor(
-		missingAiCount / self.Settings.HVTCount.Value
-	)
-	local aiCountPerHvtGroup = MSpawnsCommon.GetAiCountWithDeviationNumber(
-		3,
-		maxAiCountPerHvtGroup,
-		gamemode.GetPlayerCount(true),
-		1,
-		self.Settings.OpForPreset.Value,
-		1,
-		0
-	)
-	print('Adding group spawns closest to HVTs')
-	for i = 1, self.Objectives.ConfirmKill:GetHvtCount() do
-		local hvtLocation = actor.GetLocation(
-			self.Objectives.ConfirmKill:GetShuffledSpawnPoint(i)
-		)
-		self.AiTeams.OpFor.Spawns:AddSpawnsFromClosestGroup(aiCountPerHvtGroup, hvtLocation)
-	end
-	missingAiCount = self.AiTeams.OpFor.CalculatedAiCount -
-		self.AiTeams.OpFor.Spawns:GetSelectedSpawnPointsCount()
-	-- Select random groups and add their spawn points to spawn list
-	print('Adding random group spawns')
+	--print('Adding random group spawns')
 	while missingAiCount > 0 do
 		if self.AiTeams.OpFor.Spawns:GetRemainingGroupsCount() <= 0 then
 			break
 		end
-		local aiCountPerGroup = MSpawnsCommon.GetAiCountWithDeviationNumber(
-			2,
-			10,
-			gamemode.GetPlayerCount(true),
-			0.5,
-			self.Settings.OpForPreset.Value,
-			1,
-			1
+		local aiCountPerGroup = SpawnsCommon.GetAiCountWithDeviationNumber(
+				2,
+				10,
+				gamemode.GetPlayerCount(true),
+				0.5,
+				self.Settings.OpForPreset.Value,
+				1,
+				1
 		)
 		if aiCountPerGroup > missingAiCount	then
-			print('Remaining AI count is not enough to fill group')
+			--print('Remaining AI count is not enough to fill group')
 			break
 		end
 		self.AiTeams.OpFor.Spawns:AddSpawnsFromRandomGroup(aiCountPerGroup)
 		missingAiCount = self.AiTeams.OpFor.CalculatedAiCount -
-			self.AiTeams.OpFor.Spawns:GetSelectedSpawnPointsCount()
+				self.AiTeams.OpFor.Spawns:GetSelectedSpawnPointsCount()
 	end
-	-- Select random spawns
-	self.AiTeams.OpFor.Spawns:AddRandomSpawns()
+	--print('Adding random spawns from reserve')
 	self.AiTeams.OpFor.Spawns:AddRandomSpawnsFromReserve()
 end
 
-function KillConfirmed:SpawnOpFor()
-	self.Objectives.ConfirmKill:Spawn(0.4)
+function Mode:SpawnOpFor()
 	timer.Set(
 		self.Timers.SpawnOpFor.Name,
 		self,
@@ -487,39 +531,29 @@ function KillConfirmed:SpawnOpFor()
 	)
 end
 
-function KillConfirmed:SpawnStandardOpForTimer()
+function Mode:SpawnStandardOpForTimer()
 	self.AiTeams.OpFor.Spawns:Spawn(3.5, self.AiTeams.OpFor.CalculatedAiCount, self.AiTeams.OpFor.Tag)
-end
-
---#endregion
-
---#region Objective: Kill confirmed
-
-function KillConfirmed:OnAllKillsConfirmed()
-	self.Objectives.Exfiltrate:SelectedPointSetActive(true)
 end
 
 --#endregion
 
 --#region Objective: Extraction
 
-function KillConfirmed:OnGameTriggerBeginOverlap(GameTrigger, Player)
-	print('OnGameTriggerBeginOverlap')
+function Mode:OnGameTriggerBeginOverlap(GameTrigger, Player)
+	--print('OnGameTriggerBeginOverlap')
 	if self.Objectives.Exfiltrate:CheckTriggerAndPlayer(GameTrigger, Player) then
-		self.Objectives.Exfiltrate:PlayerEnteredExfiltration(
-			self.Objectives.ConfirmKill:AreAllConfirmed()
-		)
+		self.Objectives.Exfiltrate:PlayerEnteredExfiltration(true)
 	end
 end
 
-function KillConfirmed:OnGameTriggerEndOverlap(GameTrigger, Player)
-	print('OnGameTriggerEndOverlap')
+function Mode:OnGameTriggerEndOverlap(GameTrigger, Player)
+	--print('OnGameTriggerEndOverlap')
 	if self.Objectives.Exfiltrate:CheckTriggerAndPlayer(GameTrigger, Player) then
 		self.Objectives.Exfiltrate:PlayerLeftExfiltration()
 	end
 end
 
-function KillConfirmed:OnExfiltrated()
+function Mode:OnExfiltrated()
 	if gamemode.GetRoundStage() ~= 'InProgress' then
 		return
 	end
@@ -531,7 +565,7 @@ function KillConfirmed:OnExfiltrated()
 	-- Prepare summary
 	self:UpdateCompletedObjectives()
 	gamemode.AddGameStat('Result=Team1')
-	gamemode.AddGameStat('Summary=HVTsConfirmed')
+	gamemode.AddGameStat('Summary=VIPSurvived')
 	gamemode.SetRoundStage('PostRoundWait')
 end
 
@@ -539,20 +573,20 @@ end
 
 --#region Fail Condition
 
-function KillConfirmed:CheckBluForCountTimer()
+function Mode:CheckBluForCountTimer()
 	if gamemode.GetRoundStage() ~= 'InProgress' then
 		return
 	end
-	if self.PlayerTeams.BluFor.Script:IsWipedOut() then
-		gamemode.AddGameStat('Result=None')
+
+	if not self.Objectives.ProtectVIP:IsOK() then
 		self:UpdateCompletedObjectives()
-		if self.Objectives.ConfirmKill:AreAllNeutralized() then
-			gamemode.AddGameStat('Summary=BluForExfilFailed')
-		elseif self.Objectives.ConfirmKill:AreAllConfirmed() then
-			gamemode.AddGameStat('Summary=BluForExfilFailed')
-		else
-			gamemode.AddGameStat('Summary=BluForEliminated')
-		end
+		gamemode.AddGameStat('Result=None')
+		gamemode.AddGameStat('Summary=VipEliminated')
+		gamemode.SetRoundStage('PostRoundWait')
+	elseif self.PlayerTeams.BluFor.Script:IsWipedOut() then
+		self:UpdateCompletedObjectives()
+		gamemode.AddGameStat('Result=None')
+		gamemode.AddGameStat('Summary=BluForEliminated')
 		gamemode.SetRoundStage('PostRoundWait')
 	end
 end
@@ -561,28 +595,123 @@ end
 
 --#region Helpers
 
-function KillConfirmed:PreRoundCleanUp()
-	ai.CleanUp(self.HVT.Tag)
+function Mode:PreRoundCleanUp()
 	ai.CleanUp(self.AiTeams.OpFor.Tag)
-	for name, objective in pairs(self.Objectives) do
-		print("Resetting " .. name)
+
+	gamemode.SetTeamAttitude(1, 10, 'Neutral')
+	gamemode.SetTeamAttitude(10, 1, 'Neutral')
+	gamemode.SetTeamAttitude(10, 100, 'Friendly')
+	gamemode.SetTeamAttitude(100, 10, 'Friendly')
+
+	for _, objective in pairs(self.Objectives) do
 		objective:Reset()
 	end
 end
 
-function KillConfirmed:OnMissionSettingChanged(Setting, NewValue)
-	if Setting == "HVTCount" then
-		print('HVT count set to ' .. NewValue .. ', updating spawns & objective markers.')
-		self.Objectives.ConfirmKill:SetHvtCount(self.Settings.HVTCount.Value)
-		self.Objectives.ConfirmKill:ShuffleSpawns()
+function Mode:OnMissionSettingChanged(Setting, NewValue)
+	--print('Setting ' .. Setting)
+	if Setting == 'Scenario' then
+		if self.Settings.Scenario.LastValue ~= NewValue then
+			self:RandomizeObjectives()
+		end
+		self.Settings.Scenario.LastValue = NewValue
+	end
+	if Setting == 'AvailableForces' then
+		self:ActivateInsertionPoints()
 	end
 end
 
-function KillConfirmed:GetPlayerTeamScript()
+function Mode:GetPlayerTeamScript()
 	return self.PlayerTeams.BluFor.Script
 end
 
-function KillConfirmed:UpdateCompletedObjectives()
+function Mode:RandomizeObjectives()
+	log:Debug('RandomizeObjectives')
+
+	local eligibleVipPoints
+	if self.Settings.Scenario.Value == 0 then
+		eligibleVipPoints = self.InsertionPoints.AnyVipScenario
+	elseif self.Settings.Scenario.Value == 1 then
+		eligibleVipPoints = self.InsertionPoints.VipEscortScenario
+	elseif self.Settings.Scenario.Value == 2 then
+		eligibleVipPoints = self.InsertionPoints.VipExfilScenario
+	else
+		local index = self.Settings.Scenario.Value - SCENARIO_OFFSET
+
+		if self.Settings.Scenario.Value > #self.InsertionPoints.AnyVipScenario then
+			index = SCENARIO_OFFSET + 1
+		end
+
+		local ip = self.InsertionPoints.AnyVipScenario[index]
+		eligibleVipPoints = { ip }
+
+		log:Debug('Selected insertion', ip)
+	end
+
+	-- Pick a random VIP InsertionPoint
+	self.ActiveVipInsertionPoint = PickRandom(eligibleVipPoints)
+
+	local tags = actor.GetTags(self.ActiveVipInsertionPoint)
+
+	-- Find possible exfil points
+	local exfilTags = ArrayItemsWithPrefix(tags, 'Exfil-')
+	-- Select one
+	local exfilTag = PickRandom(exfilTags)
+
+	-- Activate exfil
+	local eligibleExfils = self.ExfilTagToExfils[exfilTag]
+	local exfilActorAndIndex = PickRandom(eligibleExfils)
+	log:Debug('Selected exfil', exfilActorAndIndex)
+	self.Objectives.Exfiltrate:SelectPoint(true, exfilActorAndIndex.Index)
+
+	self:ActivateInsertionPoints()
+end
+
+function Mode:ActivateInsertionPoints()
+	local qrfEnabled = true
+	local psdEnabled = true
+
+	if self.Settings.AvailableForces.Value == 1 then
+		qrfEnabled = false
+	elseif self.Settings.AvailableForces.Value == 2 then
+		psdEnabled = false
+	end
+
+	log:Debug('PSD', psdEnabled)
+	log:Debug('QRF', qrfEnabled)
+
+	-- Disable all InsertionPoint
+	for _, ip in ipairs(self.InsertionPoints.All) do
+		actor.SetActive(ip, false)
+	end
+	actor.SetActive(self.ActiveVipInsertionPoint, true)
+
+	local selectedVipInsertionTags = actor.GetTags(self.ActiveVipInsertionPoint)
+	local ipTags = ArrayItemsWithPrefix(selectedVipInsertionTags, 'IP-')
+
+	-- Enable all linked InsertionPoints
+	for _, InsertionPoint in ipairs(self.InsertionPoints.NonVip) do
+		local isLinkedIP = false
+
+		-- PSD insertion points
+		for _, tag in ipairs(ipTags) do
+			if actor.HasTag(InsertionPoint, tag) then
+				isLinkedIP = true
+				actor.SetActive(InsertionPoint, psdEnabled)
+			end
+		end
+
+		-- Enable QRF points
+		if not isLinkedIP and qrfEnabled then
+			if not actor.HasTag(InsertionPoint, 'Hidden') then
+				actor.SetActive(InsertionPoint, true)
+			end
+		end
+	end
+end
+
+
+function Mode:UpdateCompletedObjectives()
 	local completedObjectives = {}
 
 	for _, objective in pairs(self.Objectives) do
@@ -600,4 +729,4 @@ end
 
 --#endregion
 
-return KillConfirmed
+return Mode

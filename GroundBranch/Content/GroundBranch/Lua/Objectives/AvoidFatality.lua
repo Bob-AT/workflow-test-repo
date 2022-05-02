@@ -14,7 +14,7 @@ function AvoidFatality:Reset()
 end
 
 function AvoidFatality:GetCompletedObjectives()
-    if self:IsOK() then
+    if self:IsOK() and self.objectiveName then
         return {self.objectiveName}
     end
     return {}

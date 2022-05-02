@@ -20,7 +20,7 @@ local NoSoftFail = require("Objectives.NoSoftFail")
 local super = Tables.DeepCopy(require("KillConfirmed"))
 
 -- Use a separate loadout
-super.PlayerTeams.BluFor.Loadout='KillConfirmedSemiPermissive'
+super.PlayerTeams.BluFor.Loadout='NoTeamCamouflage'
 super.Settings.RespawnCost.Value = 100000
 
 -- Add new score types
@@ -38,20 +38,21 @@ super.TeamScoreTypes.CollateralDamage = {
 super.Objectives.AvoidFatality = AvoidFatality.new('NoCollateralDamage')
 super.Objectives.NoSoftFail = NoSoftFail.new()
 
--- The max. amount of collateral damage before failing the mission
-super.CollateralDamageThreshold = 3
-
 -- Our sub-class of the singleton
-local KillConfirmedSP = setmetatable({}, { __index = super })
+local Mode = setmetatable({}, { __index = super })
 
-function KillConfirmedSP:PostInit()
+-- The max. amount of collateral damage before failing the mission
+Mode.CollateralDamageThreshold = 3
+
+
+function Mode:PostInit()
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'NeutralizeHVTs', 1)
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'ConfirmEliminatedHVTs', 1)
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'NoCollateralDamage', 1)
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'ExfiltrateBluFor', 1)
 end
 
-function KillConfirmedSP:OnRoundStageSet(RoundStage)
+function Mode:OnRoundStageSet(RoundStage)
 	if RoundStage == 'PostRoundWait' or RoundStage == 'TimeLimitReached' then
 		-- Make sure the 'SOFT FAIL' message is cleared
 		gamemode.BroadcastGameMessage('Blank', 'Center', -1)
@@ -59,7 +60,7 @@ function KillConfirmedSP:OnRoundStageSet(RoundStage)
 	super.OnRoundStageSet(self, RoundStage)
 end
 
-function KillConfirmedSP:PreRoundCleanUp()
+function Mode:PreRoundCleanUp()
 	super.PreRoundCleanUp(self)
 	gamemode.SetTeamAttitude(1, 10, 'Neutral')
 	gamemode.SetTeamAttitude(10, 1, 'Neutral')
@@ -67,7 +68,7 @@ function KillConfirmedSP:PreRoundCleanUp()
 	gamemode.SetTeamAttitude(100, 10, 'Friendly')
 end
 
-function KillConfirmedSP:OnCharacterDied(Character, CharacterController, KillerController)
+function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 	local goodKill = true
 
 	if gamemode.GetRoundStage() == 'PreRoundWait' or gamemode.GetRoundStage() == 'InProgress'
@@ -100,7 +101,7 @@ function KillConfirmedSP:OnCharacterDied(Character, CharacterController, KillerC
 	end
 end
 
-function KillConfirmedSP:OnExfiltrated()
+function Mode:OnExfiltrated()
 	if gamemode.GetRoundStage() ~= 'InProgress' then
 		return
 	end
@@ -122,4 +123,4 @@ function KillConfirmedSP:OnExfiltrated()
 	gamemode.SetRoundStage('PostRoundWait')
 end
 
-return KillConfirmedSP
+return Mode

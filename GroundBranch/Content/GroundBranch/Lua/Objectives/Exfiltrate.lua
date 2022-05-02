@@ -55,6 +55,9 @@ function Exfiltrate:Create(
 	)
 	for _, extractionPoint in ipairs(allExtractionPoints) do
 		if actor.GetTeamId(extractionPoint) == self.Team:GetId() then
+			getmetatable(extractionPoint).__tostring = function(obj)
+				return actor.GetName(obj)
+			end
 			table.insert(self.Points.All, extractionPoint)
 		end
 	end
@@ -93,8 +96,11 @@ end
 ---active, and Exfiltrate:SelectedPointSetActive should be called to activate it
 ---when needed.
 ---@param activeFromStart boolean Should the selected extraction point be active from round start.
-function Exfiltrate:SelectPoint(activeFromStart)
-    local activeIndex = math.random(#self.Points.All)
+---@param activeIndex number The index of the active point (nil for random)
+function Exfiltrate:SelectPoint(activeFromStart, activeIndex)
+	if activeIndex == nil then
+		activeIndex = math.random(#self.Points.All)
+	end
     self.Points.Active = self.Points.All[activeIndex]
     for i = 1, #self.Points.All do
 		local bActive = (i == activeIndex)

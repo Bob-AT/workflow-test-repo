@@ -17,15 +17,21 @@ local LogLevels = {
     OFF = 100000,
 }
 
+local function split_print(s)
+    for str in string.gmatch(s, "([^\n]+)") do
+        print(str)
+    end
+end
+
 --- Create a logger
 ---@param name string the logger name
 ---@param print_function function function for printing the output
-function Logger:Create(name, print_function)
+function Logger.new(name, print_function)
     local self = setmetatable({}, {__index = Logger})
 
     self.name = name or 'Unnamed logger'
     self.logLevel = LogLevels[DEFAULT_LEVEL] or LogLevels.DEBUG
-    self.outputFunction = print_function or print
+    self.outputFunction = print_function or split_print
 
     return self
 end
@@ -80,11 +86,15 @@ local function stringify_helper(cache, result, object, level, indent_string, tos
         table.insert(result, ' ')
         stringify_helper(cache, result, info_condensed, level, indent_string, tostring)
     elseif type(object) == 'userdata' then
-        table.insert(result, tostring(object))
         local mt = getmetatable(object)
         if mt == nil then
+            table.insert(result, tostring(object))
             table.insert(result, ' with no Metatable')
+        elseif mt.__tostring then
+            table.insert(result, 'userdata ')
+            table.insert(result, mt.__tostring(object))
         else
+            table.insert(result, tostring(object))
             table.insert(result, ' with Metatable ')
             stringify_helper(cache, result, mt, level, indent_string, tostring)
         end

@@ -11,15 +11,15 @@ VARIATIONS=[
     # 3
     [('Shirt', 'Shirt:BP_Shirt_ButtonUp', 'Tan')],
     # 4
-    [('Shirt', 'Shirt:BP_Shirt_ButtonUp_Plain', 'Grey')],
+    [('Shirt', 'Shirt:BP_Shirt_ButtonUp_Plain', 'Black')],
     # 5
     [('Shirt', 'Shirt:BP_Shirt_ButtonUp_Plain', 'Navy')],
     # 6
-    [('Shirt', 'Shirt:BP_Shirt_ButtonUp', 'Green'),('Pants', 'Pants:BP_Pants_Jeans', 'Black')],
+    [('Shirt', 'Shirt:BP_Shirt_Under', 'Red'),('Pants', 'Pants:BP_Pants_Jeans', 'Blue')],
     # 7
-    [('Shirt', 'Shirt:BP_Shirt_ButtonUp_Plain', 'Grey'),('Pants', 'Pants:BP_Pants_Jeans', 'Black')],
+    [('Shirt', 'Shirt:BP_Shirt_Under', 'Navy'),('Pants', 'Pants:BP_Pants_Jeans', 'Blue')],
     # 8
-    [('Shirt', 'Shirt:BP_Shirt_ButtonUp', 'Tan'),('Pants', 'Pants:BP_Pants_Jeans', 'Black')]
+    [('Shirt', 'Shirt:BP_Shirt_Under', 'Khaki'),('Pants', 'Pants:BP_Pants_Jeans', 'Blue')]
 ]
 
 import json
@@ -54,7 +54,7 @@ def process_file(filename_prefix):
 def main():
     prefix_list=['Narcos/Civ', 'Narcos/Tango_AR', 'Narcos/Tango_SMG', 'Narcos/Tango_SNP', 'Narcos/Tango_STG', 'Narcos/Tango_HDG']
     for filename_prefix in prefix_list:
-        process_file(filename_prefix)
+        process_file('GroundBranch/Content/GroundBranch/AI/Loadouts/' + filename_prefix)
 
 if __name__ == "__main__":
     main()

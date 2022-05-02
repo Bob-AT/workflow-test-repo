@@ -1,5 +1,6 @@
 Key,SourceString,Comment
 "KillConfirmed","Kill Confirmed",""
+"KillConfirmedSemiPermissive","Kill Confirmed (Semi-Permissive)",""
 "missionsetting_hvtcount","Expected HVTs","Opsboard"
 "missionsetting_opforpreset","Expected Resistance","Opsboard"
 "missionsetting_opforpreset_0","Underwhelming","Opsboard"

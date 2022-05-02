@@ -1,0 +1,11 @@
+{
+    "name" : "Preview",
+    "version" : "1032.4.30",
+    "dependencies" : [
+        "AssetExtraction.gbm",
+        "KillConfirmed.gbm",
+        "SecurityDetail.gbm"
+    ],
+    "files" : [
+    ]
+}

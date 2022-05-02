@@ -1,11 +1,16 @@
 {
     "name" : "AssetExtraction",
-    "version" : "0.0.1",
+    "version" : "1032.4.30",
     "dependencies" : [
+        "Common.gbm"
     ],
     "files" : [
-        "GroundBranch/Content/GroundBranch/Mission/*/AssetExtraction*.mis",
+        "GroundBranch/Content/GroundBranch/Mission/*/AssetExtraction.mis",
+        "GroundBranch/Content/GroundBranch/Mission/*/AssetExtractionSemiPermissive.mis",
+        "GroundBranch/Content/GroundBranch/Lua/SecurityDetail.lua",
         "GroundBranch/Content/GroundBranch/Lua/AssetExtraction.lua",
-        "GroundBranch/Content/Localization/GroundBranch/en/AssetExtraction.csv"
+        "GroundBranch/Content/GroundBranch/Lua/AssetExtractionSemiPermissive.lua",
+        "GroundBranch/Content/Localization/GroundBranch/en/AssetExtraction.csv",
+        "GroundBranch/Content/GroundBranch/DefaultLoadouts/NoTeamCamouflage.kit"
     ]
 }
