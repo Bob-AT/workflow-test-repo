@@ -1,6 +1,7 @@
 --[[
-Kill Confirmed (Semi-Permissive)  2022-05-08
+Kill Confirmed (Semi-Permissive)
 PvE Ground Branch game mode by Bob/AT
+2022-05-08
 
 https://github.com/JakBaranowski/ground-branch-game-modes/issues/26
 
