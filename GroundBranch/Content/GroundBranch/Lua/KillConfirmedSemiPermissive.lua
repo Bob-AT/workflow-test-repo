@@ -1,5 +1,5 @@
 --[[
-Kill Confirmed (Semi-Permissive)
+Kill Confirmed (Semi-Permissive)  2022-05-08
 PvE Ground Branch game mode by Bob/AT
 
 https://github.com/JakBaranowski/ground-branch-game-modes/issues/26
@@ -10,6 +10,7 @@ Notes for Mission Editing:
   2. Add non-combatants
   - use team id = 10
   - one of the unarmed 'Civ*' kits)
+
 ]]--
 
 local Tables = require("Common.Tables")
@@ -92,6 +93,10 @@ function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 					self.Objectives.NoSoftFail:Fail()
 					self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('SoftFail', 'Upper', 10.0, 'Always')
 				end
+			end
+			if killedTeam == killerTeam and killerTeam == self.PlayerTeams.BluFor.TeamId then
+				-- Count fratricides as collateral damage
+				self.Objectives.AvoidFatality:ReportFatality()
 			end
 		end
 	end

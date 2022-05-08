@@ -1,7 +1,7 @@
 #!python3
 
 # Script for generating some shirt/pant color variations
-# Reads *1.kit and writes *{1,2,4,5,6,7,8}.kit files
+# Reads *.json and writes *{1,2,4,5,6,7,8}.kit files
 
 VARIATIONS=[
     # 1
@@ -22,6 +22,13 @@ VARIATIONS=[
     [('Shirt', 'Shirt:BP_Shirt_Under', 'Khaki'),('Pants', 'Pants:BP_Pants_Jeans', 'Blue')]
 ]
 
+VARIATIONS_FOR_HVT=[
+    # 1
+    [('Shirt', 'Shirt:BP_Shirt_ButtonUp_Plain', 'Black')],
+    # 2
+    [('Shirt', 'Shirt:BP_Shirt_ButtonUp', 'Tan')]
+]
+
 import json
 
 def load_kit(name):
@@ -30,10 +37,10 @@ def load_kit(name):
     f.close()
     return data
 
-def process_file(filename_prefix):
+def process_file(filename_prefix, variation_list):
     i = 0
     print("Processing " + filename_prefix)
-    for variation_list in VARIATIONS:
+    for variation_list in variation_list:
         i = i + 1
         data = load_kit(filename_prefix + '-template.json')
 
@@ -54,7 +61,8 @@ def process_file(filename_prefix):
 def main():
     prefix_list=['Narcos/Civ', 'Narcos/Tango_AR', 'Narcos/Tango_SMG', 'Narcos/Tango_SNP', 'Narcos/Tango_STG', 'Narcos/Tango_HDG']
     for filename_prefix in prefix_list:
-        process_file('GroundBranch/Content/GroundBranch/AI/Loadouts/' + filename_prefix)
+        process_file('GroundBranch/Content/GroundBranch/AI/Loadouts/' + filename_prefix, VARIATIONS)
+    process_file('GroundBranch/Content/GroundBranch/AI/Loadouts/Narcos/HVT_AR', VARIATIONS_FOR_HVT)
 
 if __name__ == "__main__":
     main()

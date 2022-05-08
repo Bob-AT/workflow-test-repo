@@ -23,9 +23,34 @@
                             "BulletId": "Bullet:BP_556x45mmNATO_FMJ"
                         },
                         {
-                            "Item": "Sight:BP_EXP3_HoloGraphic_Black",
+                            "Item": "Sight:BP_Trijicon_SRS",
                             "Rail": "RearSightRail",
                             "Slot": 4
+                        },
+                        {
+                            "Item": "RailAttachment:BP_RailCover",
+                            "Rail": "TopRail",
+                            "Slot": 1
+                        },
+                        {
+                            "Item": "RailAttachment:BP_RailCover",
+                            "Rail": "BottomRail",
+                            "Slot": 1
+                        },
+                        {
+                            "Item": "RailAttachment:BP_RailCover",
+                            "Rail": "RightRail",
+                            "Slot": 1
+                        },
+                        {
+                            "Item": "RailAttachment:BP_LaserSight_Rifle",
+                            "Rail": "RightRail",
+                            "Slot": 19
+                        },
+                        {
+                            "Item": "RailAttachment:BP_RailCover",
+                            "Rail": "LeftRail",
+                            "Slot": 1
                         }
                     ]
                 }
@@ -40,14 +65,86 @@
                     "Skin": "Tan"
                 },
                 {
-                    "Type": "Platform",
-                    "Item": "Platform:BP_Platform_ChestRig_JAC",
-                    "Skin": "Tan"
-                },
-                {
                     "Type": "Belt",
                     "Item": "Belt:BP_Battlebelt_TF",
-                    "Skin": "Tan"
+                    "Skin": "Tan",
+                    "Children": [
+                        {
+                            "Item": "Pouch:BP_Pouch_PrimaryAmmo",
+                            "Comp": "PlatformMeshComponent0",
+                            "Socket": "Pouch_1",
+                            "Children": [
+                                {
+                                    "Item": "Magazine:BP_STANAG556_Magazine",
+                                    "BulletId": "Bullet:BP_556x45mmNATO_FMJ"
+                                },
+                                {
+                                    "Item": "Magazine:BP_STANAG556_Magazine",
+                                    "BulletId": "Bullet:BP_556x45mmNATO_FMJ"
+                                }
+                            ]
+                        },
+                        {
+                            "Item": "Pouch:BP_Pouch_PrimaryAmmo",
+                            "Comp": "PlatformMeshComponent0",
+                            "Socket": "Pouch_7",
+                            "Children": [
+                                {
+                                    "Item": "Magazine:BP_STANAG556_Magazine",
+                                    "BulletId": "Bullet:BP_556x45mmNATO_FMJ"
+                                },
+                                {
+                                    "Item": "Magazine:BP_STANAG556_Magazine",
+                                    "BulletId": "Bullet:BP_556x45mmNATO_FMJ"
+                                }
+                            ]
+                        },
+                        {
+                            "Item": "Pouch:BP_Pouch_PrimaryAmmo",
+                            "Comp": "PlatformMeshComponent0",
+                            "Socket": "Pouch_5",
+                            "Children": [
+                                {
+                                    "Item": "Magazine:BP_STANAG556_Magazine",
+                                    "BulletId": "Bullet:BP_556x45mmNATO_FMJ"
+                                },
+                                {
+                                    "Item": "Magazine:BP_STANAG556_Magazine",
+                                    "BulletId": "Bullet:BP_556x45mmNATO_FMJ"
+                                }
+                            ]
+                        },
+                        {
+                            "Item": "Pouch:BP_Pouch_PrimaryAmmo",
+                            "Comp": "PlatformMeshComponent0",
+                            "Socket": "Pouch_4",
+                            "Children": [
+                                {
+                                    "Item": "Magazine:BP_STANAG556_Magazine",
+                                    "BulletId": "Bullet:BP_556x45mmNATO_FMJ"
+                                },
+                                {
+                                    "Item": "Magazine:BP_STANAG556_Magazine",
+                                    "BulletId": "Bullet:BP_556x45mmNATO_FMJ"
+                                }
+                            ]
+                        },
+                        {
+                            "Item": "Pouch:BP_Pouch_PrimaryAmmo",
+                            "Comp": "PlatformMeshComponent0",
+                            "Socket": "Pouch_3",
+                            "Children": [
+                                {
+                                    "Item": "Magazine:BP_STANAG556_Magazine",
+                                    "BulletId": "Bullet:BP_556x45mmNATO_FMJ"
+                                },
+                                {
+                                    "Item": "Magazine:BP_STANAG556_Magazine",
+                                    "BulletId": "Bullet:BP_556x45mmNATO_FMJ"
+                                }
+                            ]
+                        }
+                    ]
                 }
             ]
         },

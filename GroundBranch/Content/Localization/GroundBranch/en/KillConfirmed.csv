@@ -1,6 +1,6 @@
 Key,SourceString,Comment
 "KillConfirmed","Kill Confirmed",""
-"KillConfirmedSemiPermissive","Kill Confirmed (Semi-Permissive)",""
+"gamemode_killconfirmedsemipermissive","Kill Confirmed (Semi-Permissive)","not used at the moment"
 "missionsetting_hvtcount","Expected HVTs","Opsboard"
 "missionsetting_opforpreset","Expected Resistance","Opsboard"
 "missionsetting_opforpreset_0","Underwhelming","Opsboard"
@@ -24,7 +24,7 @@ Key,SourceString,Comment
 "objective_NeutralizeHVTs","Locate and neutralize High Value Targets (HVTs).","Opsboard"
 "objective_ConfirmEliminatedHVTs","Confirm that every neutralized HVT is eliminated.","Opsboard"
 "objective_ExfiltrateBluFor","Exfiltrate via marked extraction point.","Opsboard"
-"objective_NoCollateralDamage","Avoid collateral damage","Opsboard"
+"objective_NoCollateralDamage","Avoid collateral damage.","Opsboard"
 "gamemessage_Blank","","objective"
 "gamemessage_SoftFail","SOFT FAIL: Too many non-combatants killed","objective"
 "gamemessage_HVTEliminated","HVT neutralized. Confirm the kill.","objective"
