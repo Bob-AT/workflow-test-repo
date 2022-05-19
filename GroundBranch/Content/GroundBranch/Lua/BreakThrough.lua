@@ -147,7 +147,7 @@ local BreakThrough = {
 
 --#region Preparation
 
-function BreakOut:PreInit()
+function BreakThrough:PreInit()
 	print('Initializing Break Out')
 	-- Initalize game message broker
 	self.PlayerTeams.BluFor.Script = MTeams:Create(
@@ -168,7 +168,7 @@ function BreakOut:PreInit()
 	)
 end
 
-function BreakOut:PostInit()
+function BreakThrough:PostInit()
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'TraverseBluFor', 1)
 	print('Added game mode objectives')
 end
@@ -177,7 +177,7 @@ end
 
 --#region Common
 
-function BreakOut:OnRoundStageSet(RoundStage)
+function BreakThrough:OnRoundStageSet(RoundStage)
 	print('Started round stage ' .. RoundStage)
 	timer.ClearAll()
 	if RoundStage == 'WaitingForReady' then
@@ -197,7 +197,7 @@ function BreakOut:OnRoundStageSet(RoundStage)
 	end
 end
 
-function BreakOut:OnCharacterDied(Character, CharacterController, KillerController)
+function BreakThrough:OnCharacterDied(Character, CharacterController, KillerController)
 	if
 		gamemode.GetRoundStage() == 'PreRoundWait' or
 		gamemode.GetRoundStage() == 'InProgress'
@@ -237,7 +237,7 @@ end
 
 --#region Player Status
 
-function BreakOut:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
+function BreakThrough:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
 	if InsertionPoint == nil then
 		timer.Set(
 			self.Timers.CheckReadyDown.Name,
@@ -257,7 +257,7 @@ function BreakOut:PlayerInsertionPointChanged(PlayerState, InsertionPoint)
 	end
 end
 
-function BreakOut:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
+function BreakThrough:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
 	if ReadyStatus ~= 'DeclaredReady' then
 		timer.Set(
 			self.Timers.CheckReadyDown.Name,
@@ -274,7 +274,7 @@ function BreakOut:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
 	end
 end
 
-function BreakOut:CheckReadyUpTimer()
+function BreakThrough:CheckReadyUpTimer()
 	if
 		gamemode.GetRoundStage() == 'WaitingForReady' or
 		gamemode.GetRoundStage() == 'ReadyCountdown'
@@ -289,7 +289,7 @@ function BreakOut:CheckReadyUpTimer()
 	end
 end
 
-function BreakOut:CheckReadyDownTimer()
+function BreakThrough:CheckReadyDownTimer()
 	if gamemode.GetRoundStage() == 'ReadyCountdown' then
 		local ReadyPlayerTeamCounts = gamemode.GetReadyPlayerTeamCounts(true)
 		if ReadyPlayerTeamCounts[self.PlayerTeams.BluFor.TeamId] < 1 then
@@ -298,14 +298,14 @@ function BreakOut:CheckReadyDownTimer()
 	end
 end
 
-function BreakOut:ShouldCheckForTeamKills()
+function BreakThrough:ShouldCheckForTeamKills()
 	if gamemode.GetRoundStage() == 'InProgress' then
 		return true
 	end
 	return false
 end
 
-function BreakOut:PlayerCanEnterPlayArea(PlayerState)
+function BreakThrough:PlayerCanEnterPlayArea(PlayerState)
 	print('PlayerCanEnterPlayArea')
 	if
 		gamemode.GetRoundStage() == 'InProgress' or
@@ -316,19 +316,19 @@ function BreakOut:PlayerCanEnterPlayArea(PlayerState)
 	return false
 end
 
-function BreakOut:GetSpawnInfo(PlayerState)
+function BreakThrough:GetSpawnInfo(PlayerState)
 	print('GetSpawnInfo')
 	if gamemode.GetRoundStage() == 'InProgress' then
 		self.PlayerTeams.BluFor.Script:RespawnCleanUp(PlayerState)
 	end
 end
 
-function BreakOut:PlayerEnteredPlayArea(PlayerState)
+function BreakThrough:PlayerEnteredPlayArea(PlayerState)
 	print('PlayerEnteredPlayArea')
 	player.SetInsertionPoint(PlayerState, nil)
 end
 
-function BreakOut:LogOut(Exiting)
+function BreakThrough:LogOut(Exiting)
 	if
 		gamemode.GetRoundStage() == 'PreRoundWait' or
 		gamemode.GetRoundStage() == 'InProgress'
@@ -347,7 +347,7 @@ end
 
 --#region Spawns
 
-function BreakOut:SetUpOpForSpawns()
+function BreakThrough:SetUpOpForSpawns()
 	print('Setting up AI spawns by groups')
 	local maxAiCount = math.min(
 		self.AiTeams.OpFor.Spawns:GetTotalSpawnPointsCount(),
@@ -389,7 +389,7 @@ function BreakOut:SetUpOpForSpawns()
 	self.AiTeams.OpFor.Spawns:AddRandomSpawnsFromReserve()
 end
 
-function BreakOut:SpawnOpFor()
+function BreakThrough:SpawnOpFor()
 	self.AiTeams.OpFor.Spawns:Spawn(4.0, self.AiTeams.OpFor.CalculatedAiCount, self.AiTeams.OpFor.Tag)
 	timer.Set(
 		self.Timers.CheckSpawnedAi.Name,
@@ -400,7 +400,7 @@ function BreakOut:SpawnOpFor()
 	)
 end
 
-function BreakOut:CheckSpawnedAiTimer()
+function BreakThrough:CheckSpawnedAiTimer()
 	local aiControllers = ai.GetControllers(
 		'GroundBranch.GBAIController',
 		self.AiTeams.OpFor.Tag,
@@ -414,19 +414,19 @@ end
 
 --#region Objective: Extraction
 
-function BreakOut:OnGameTriggerBeginOverlap(GameTrigger, Player)
+function BreakThrough:OnGameTriggerBeginOverlap(GameTrigger, Player)
 	if self.Objectives.Exfiltrate:CheckTriggerAndPlayer(GameTrigger, Player) then
 		self.Objectives.Exfiltrate:PlayerEnteredExfiltration(true)
 	end
 end
 
-function BreakOut:OnGameTriggerEndOverlap(GameTrigger, Player)
+function BreakThrough:OnGameTriggerEndOverlap(GameTrigger, Player)
 	if self.Objectives.Exfiltrate:CheckTriggerAndPlayer(GameTrigger, Player) then
 		self.Objectives.Exfiltrate:PlayerLeftExfiltration()
 	end
 end
 
-function BreakOut:OnExfiltrated()
+function BreakThrough:OnExfiltrated()
 	if gamemode.GetRoundStage() ~= 'InProgress' then
 		return
 	end
@@ -454,7 +454,7 @@ end
 
 --#region Fail condition
 
-function BreakOut:CheckBluForCountTimer()
+function BreakThrough:CheckBluForCountTimer()
 	if gamemode.GetRoundStage() ~= 'InProgress' then
 		return
 	end
@@ -470,12 +470,12 @@ end
 
 --region Helpers
 
-function BreakOut:PreRoundCleanUp()
+function BreakThrough:PreRoundCleanUp()
 	ai.CleanUp(self.AiTeams.OpFor.Tag)
 	self.Objectives.Exfiltrate:Reset()
 end
 
-function BreakOut:GetPlayerTeamScript()
+function BreakThrough:GetPlayerTeamScript()
 	return self.PlayerTeams.BluFor.Script
 end
 
