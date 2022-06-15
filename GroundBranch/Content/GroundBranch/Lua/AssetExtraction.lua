@@ -69,7 +69,7 @@ Mode.VipStarts = {}
 Mode.VipStartForThisRound = nil
 
 --#region Helpers
-function PickRandom(tbl)
+local function PickRandom(tbl)
 	local len = #tbl
 
 	if len == 0 then

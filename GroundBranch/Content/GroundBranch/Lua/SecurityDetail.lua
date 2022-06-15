@@ -171,7 +171,7 @@ local Mode = {
 --#endregion
 
 --#region Helpers
-function ArrayItemsWithPrefix(array, prefix)
+local function ArrayItemsWithPrefix(array, prefix)
 	local len = #prefix
 	local result = {}
 	for _, item in ipairs(array) do
@@ -182,7 +182,7 @@ function ArrayItemsWithPrefix(array, prefix)
 	return result
 end
 
-function PickRandom(tbl)
+local function PickRandom(tbl)
 	local len = #tbl
 
 	if len == 0 then
