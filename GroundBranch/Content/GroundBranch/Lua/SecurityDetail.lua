@@ -1,14 +1,13 @@
 --[[
-Security Detail
-PvE Ground Branch game mode
+	Security Detail
+	PvE Ground Branch game mode by Bob/AT
 
-Based on 'Kill Confirmed'
+	Code is mostly based on 'BreakOut' by Jakub 'eelSkillz' Baranowski
 
-Notes for Mission Editing:
+	Notes for Mission Editing:
 
-  1. Start with a regular 'Kill Confirmed' mission
-  ...
-
+		1. Start with a regular 'Kill Confirmed' mission
+		[...]
 ]]--
 
 local Teams = require('Players.Teams')

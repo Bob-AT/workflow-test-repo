@@ -1,11 +1,11 @@
 --[[
-  Asset Extraction
-  PvE Ground Branch game mode by Bob/AT
+	Asset Extraction
+	PvE Ground Branch game mode by Bob/AT
 
-  Notes for Mission Editing:
+	Notes for Mission Editing:
 
-    1. Start with a regular 'Kill Confirmed' mission
-	...
+		1. Start with a regular 'Kill Confirmed' mission
+		[...]
 ]]--
 
 local Teams = require('Players.Teams')
