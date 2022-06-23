@@ -37,7 +37,7 @@ local KillConfirmed = {
 			AdvancedSetting = false,
 		},
 		RoundTime = {
-			Min = 10,
+			Min = 5,
 			Max = 60,
 			Value = 60,
 			AdvancedSetting = false,
@@ -228,6 +228,7 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 		self.Objectives.ConfirmKill:SetHvtCount(self.Settings.HVTCount.Value)
 		self.Objectives.ConfirmKill:ShuffleSpawns()
 	elseif RoundStage == 'PreRoundWait' then
+		gamemode.SetDefaultRoundStageTime("InProgress", self.Settings.RoundTime.Value)
 		self:SetUpOpForStandardSpawns()
 		self:SpawnOpFor()
 	elseif RoundStage == 'InProgress' then

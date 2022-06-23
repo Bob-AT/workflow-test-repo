@@ -30,7 +30,7 @@ local BreakOut = {
 			AdvancedSetting = false,
 		},
 		RoundTime = {
-			Min = 10,
+			Min = 5,
 			Max = 60,
 			Value = 60,
 			AdvancedSetting = false,
@@ -185,6 +185,7 @@ function BreakOut:OnRoundStageSet(RoundStage)
 		self:PreRoundCleanUp()
 		self.Objectives.Exfiltrate:SelectPoint(true)
 	elseif RoundStage == 'PreRoundWait' then
+		gamemode.SetDefaultRoundStageTime("InProgress", self.Settings.RoundTime.Value)
 		self:SetUpOpForSpawns()
 		self:SpawnOpFor()
 	elseif RoundStage == 'InProgress' then

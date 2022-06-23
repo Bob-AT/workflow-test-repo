@@ -89,6 +89,7 @@ end
 function Test:OnRoundStageSet(RoundStage)
 	print('OnRoundStageSet ' .. RoundStage)
 	if RoundStage == 'PreRoundWait' then
+		gamemode.SetDefaultRoundStageTime("InProgress", self.Settings.RoundTime.Value)
 		self.AiSpawns:SelectSpawnPoints()
 		print('Stage time ' .. gamemode.GetRoundStageTime())
 		self.AiSpawns:Spawn(

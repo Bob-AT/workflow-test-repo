@@ -58,7 +58,7 @@ local Mode = {
 			AdvancedSetting = false,
 		},
 		RoundTime = {
-			Min = 10,
+			Min = 5,
 			Max = 60,
 			Value = 60,
 			AdvancedSetting = false,
@@ -290,6 +290,7 @@ function Mode:OnRoundStageSet(RoundStage)
 		self:PreRoundCleanUp()
 		self:RandomizeObjectives()
 	elseif RoundStage == 'PreRoundWait' then
+		gamemode.SetDefaultRoundStageTime("InProgress", self.Settings.RoundTime.Value)
 		self:SetUpOpForStandardSpawns()
 		self:SpawnOpFor()
 	elseif RoundStage == 'InProgress' then
