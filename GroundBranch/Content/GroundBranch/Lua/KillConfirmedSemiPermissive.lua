@@ -1,18 +1,22 @@
 --[[
-Kill Confirmed (Semi-Permissive)
-PvE Ground Branch game mode by Bob/AT
-2022-05-08
+	Kill Confirmed (Semi-Permissive)
+	PvE Ground Branch game mode by Bob/AT
+	2022-06-23
 
-https://github.com/JakBaranowski/ground-branch-game-modes/issues/26
+	https://github.com/JakBaranowski/ground-branch-game-modes/issues/26
 
-Notes for Mission Editing:
+	Notes for Mission Editing:
 
-  1. Start with a regular 'Kill Confirmed' mission
-  2. Add non-combatants
-  - use team id = 10
-  - one of the unarmed 'Civ*' kits)
-
+		1. Start with a regular 'Kill Confirmed' mission
+		2. Add non-combatants
+			- use team id = 10
+			- one of the unarmed 'Civ*' kits)
 ]]--
+
+-- Set to 0 (zero) to disable the SOFT FAIL
+local ADMIN_SOFT_FAIL_ENABLED = 1
+--
+
 
 local Tables = require("Common.Tables")
 local AvoidFatality = require("Objectives.AvoidFatality")
@@ -43,6 +47,9 @@ super.Objectives.NoSoftFail = NoSoftFail.new()
 -- Our sub-class of the singleton
 local Mode = setmetatable({}, { __index = super })
 
+Mode.Config = {
+	SoftFailEnabled = not not ADMIN_SOFT_FAIL_ENABLED -- coerce bool
+}
 -- The max. amount of collateral damage before failing the mission
 Mode.CollateralDamageThreshold = 3
 
@@ -55,7 +62,7 @@ function Mode:PostInit()
 end
 
 function Mode:OnRoundStageSet(RoundStage)
-	if RoundStage == 'PostRoundWait' or RoundStage == 'TimeLimitReached' then
+	if (RoundStage == 'PostRoundWait' or RoundStage == 'TimeLimitReached') and self.Config.SoftFailEnabled then
 		-- Make sure the 'SOFT FAIL' message is cleared
 		gamemode.BroadcastGameMessage('Blank', 'Center', -1)
 	end
@@ -92,7 +99,16 @@ function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 
 				if self.Objectives.AvoidFatality:GetFatalityCount() >= self.CollateralDamageThreshold then
 					self.Objectives.NoSoftFail:Fail()
-					self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('SoftFail', 'Upper', 10.0, 'Always')
+					if self.Config.SoftFailEnabled then
+						-- Fail soft
+						self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('SoftFail', 'Upper', 10.0, 'Always')
+					else
+						-- Fail hard
+						self:UpdateCompletedObjectives()
+						gamemode.AddGameStat('Summary=SoftFail')
+						gamemode.AddGameStat('Result=None')
+						gamemode.SetRoundStage('PostRoundWait')
+					end
 				end
 			end
 			if killedTeam == killerTeam and killerTeam == self.PlayerTeams.BluFor.TeamId then
