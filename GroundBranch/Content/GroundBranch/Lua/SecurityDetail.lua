@@ -158,13 +158,15 @@ local Mode = {
 	},
 	ExfilTagToExfils = {},
 	ActiveVipInsertionPoint = nil,
-	VipPlayerId = nil,
+	VipPlayerName = '',
 	-- Whether we have non-combatants in the AO
 	IsSemiPermissive = false,
 	-- The max. amount of collateral damage before failing the mission
 	CollateralDamageThreshold = 3,
 	-- Ref. to logger
-	Logger = log
+	Logger = log,
+	-- Fallback locations
+	FallbackInsertionPoint = nil,
 }
 
 --#endregion
@@ -188,7 +190,7 @@ local function PickRandom(tbl)
 		return nil
 	end
 
-	return tbl[math.random(len)]
+	return tbl[umath.random(len)]
 end
 --#endregion
 
@@ -280,20 +282,63 @@ end
 
 --#region Common
 
+function Mode:EnsureVipPlayerPresent(isLate)
+	if self.VipPlayerName ~= '' then
+		return
+	end
+
+	local allPlayers = gamemode.GetPlayerList(self.PlayerTeams.BluFor.TeamId, true)
+	local playersInReadyRoom = {}
+	local playersWithoutInsertionPoint = {}
+
+	for _, aPlayer in ipairs(allPlayers) do
+		local status = player.GetReadyStatus(aPlayer)
+		if status == 'WaitingToReadyUp' then
+			table.insert(playersInReadyRoom, aPlayer)
+			table.insert(playersWithoutInsertionPoint, aPlayer)
+		elseif status == 'DeclaredReady' then
+			table.insert(playersInReadyRoom, aPlayer)
+		end
+	end
+
+	local vipPlayer
+	if #playersWithoutInsertionPoint > 0 then
+		vipPlayer = PickRandom(playersWithoutInsertionPoint)
+	elseif #playersInReadyRoom > 0 then
+		vipPlayer = PickRandom(playersInReadyRoom)
+	else
+		return
+	end
+
+	local message = 'Picked random VIP'
+	if isLate then
+		message = message .. '. Might be too late to change insertion point.'
+	end
+	gamemode.BroadcastGameMessage(message, 'Engine', 11.5)
+	self.VipPlayerName = player.GetName(vipPlayer)
+	player.SetInsertionPoint(vipPlayer, self.ActiveVipInsertionPoint)
+end
+
 function Mode:OnRoundStageSet(RoundStage)
 	log:Debug('Started round stage', RoundStage)
 
+	print(RoundStage .. ' -> ' .. gamemode.GetRoundStageTime())
 	timer.ClearAll()
-	if RoundStage == 'WaitingForReady' then
-		self.VipPlayerId = '?none?'
+	if RoundStage == 'PostRoundWait' or RoundStage == 'TimeLimitReached' then
+		self.VipPlayerName = ''
+	elseif RoundStage == 'WaitingForReady' then
 		self:PreRoundCleanUp()
 		self:RandomizeObjectives()
 	elseif RoundStage == 'PreRoundWait' then
+		self:EnsureVipPlayerPresent(true)
 		gamemode.SetDefaultRoundStageTime("InProgress", self.Settings.RoundTime.Value)
+
 		self:SetUpOpForStandardSpawns()
 		self:SpawnOpFor()
+
+		local message = 'Protect ' .. self.VipPlayerName .. '.'
+		gamemode.BroadcastGameMessage(message, "Upper", 11.5)
 	elseif RoundStage == 'InProgress' then
-		self.PlayerTeams.BluFor.Script:DisplayMessageToAllPlayers('Protect the VIP', 'Engine', 5.0, 'Always')
 		self.Objectives.Exfiltrate:SelectedPointSetActive(true)
 		self.PlayerTeams.BluFor.Script:RoundStart(
 			10000,
@@ -303,6 +348,13 @@ function Mode:OnRoundStageSet(RoundStage)
 			false
 		)
 	end
+end
+
+function Mode:OnRoundStageTimeElapsed(RoundStage)
+	if RoundStage == 'ReadyCountdown' then
+		self:EnsureVipPlayerPresent()
+	end
+	return false
 end
 
 function Mode:OnCharacterDied(Character, CharacterController, KillerController)
@@ -344,8 +396,13 @@ function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 				self.PlayerTeams.BluFor.Script:PlayerDied(CharacterController, Character)
 
 				local ps = player.GetPlayerState ( CharacterController )
-				if player.GetName(ps) == self.VipPlayerId then
-					self.Objectives.ProtectVIP:ReportFatality()
+				if player.GetName(ps) == self.VipPlayerName then
+					if killerTeam then
+						log:Info('VIP killed', self.VipPlayerName)
+						self.Objectives.ProtectVIP:ReportFatality()
+					elseif gamemode.GetRoundStage() == 'InProgress' and (not self.PlayerTeams.BluFor.Script:IsWipedOut()) then
+
+					end
 				end
 
 				if self.PlayerTeams.BluFor.Script:IsWipedOut() then
@@ -390,8 +447,8 @@ function Mode:PlayerInsertionPointChanged(PlayerState, ip)
 		)
 
 		if self:IsVipInsertionPoint(ip) then
-			self.VipPlayerId = player.GetName(PlayerState)
-			log:Info('VIP Player:', self.VipPlayerId)
+			self.VipPlayerName = player.GetName(PlayerState)
+			log:Info('VIP insertion point selected', self.VipPlayerName)
 		end
 	end
 end
@@ -401,22 +458,33 @@ function Mode:IsVipInsertionPoint(ip)
 end
 
 function Mode:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
-	--print('PlayerReadyStatusChanged ' .. ReadyStatus)
+	log:Debug('PlayerReadyStatusChanged', ReadyStatus)
+
 	if ReadyStatus ~= 'DeclaredReady' then
 		-- Player declared ready.
 		timer.Set(
-			self.Timers.CheckReadyDown.Name,
-			self,
-			self.CheckReadyDownTimer,
-			self.Timers.CheckReadyDown.TimeStep,
-			false
+				self.Timers.CheckReadyDown.Name,
+				self,
+				self.CheckReadyDownTimer,
+				self.Timers.CheckReadyDown.TimeStep,
+				false
 		)
-	elseif
-		gamemode.GetRoundStage() == 'PreRoundWait' and
-		gamemode.PrepLatecomer(PlayerState)
-	then
-		-- Player did not declare ready, but the timer run out.
-		gamemode.EnterPlayArea(PlayerState)
+	elseif gamemode.GetRoundStage() == 'PreRoundWait' then
+		local insertionPoint = self.FallbackInsertionPoint
+
+		-- Don't use fallback for late-coming VIP
+		if player.GetName(PlayerState) == self.VipPlayerName then
+			insertionPoint = self.ActiveVipInsertionPoint
+		end
+
+		player.SetInsertionPoint(PlayerState, insertionPoint)
+		if gamemode.PrepLatecomer(PlayerState) then
+			-- Assign InsertionPoint again in case `PrepLatecomer`
+			-- modified it.
+			player.SetInsertionPoint(PlayerState, insertionPoint)
+
+			gamemode.EnterPlayArea(PlayerState)
+		end
 	end
 end
 
@@ -428,6 +496,7 @@ function Mode:CheckReadyUpTimer()
 		local ReadyPlayerTeamCounts = gamemode.GetReadyPlayerTeamCounts(true)
 		local BluForReady = ReadyPlayerTeamCounts[self.PlayerTeams.BluFor.TeamId]
 		if BluForReady >= gamemode.GetPlayerCount(true) then
+			self:EnsureVipPlayerPresent()
 			gamemode.SetRoundStage('PreRoundWait')
 		elseif BluForReady > 0 then
 			gamemode.SetRoundStage('ReadyCountdown')
@@ -459,12 +528,16 @@ function Mode:PlayerCanEnterPlayArea(PlayerState)
 end
 
 function Mode:LogOut(Exiting)
-	--print('Player left the game ')
-	--print(Exiting)
+	print('Player left the game ')
+	print(Exiting)
 	if
 		gamemode.GetRoundStage() == 'PreRoundWait' or
 		gamemode.GetRoundStage() == 'InProgress'
 	then
+		if player.GetName(Exiting) == self.VipPlayerName then
+			gamemode.BroadcastGameMessage('VIP left', 'Upper', 15)
+		end
+
 		timer.Set(
 			self.Timers.CheckBluForCount.Name,
 			self,
@@ -667,7 +740,7 @@ function Mode:RandomizeObjectives()
 	self:ActivateInsertionPoints()
 end
 
-function Mode:ActivateInsertionPoints()
+function Mode:ParseAvailableForces()
 	local qrfEnabled = true
 	local psdEnabled = true
 
@@ -676,6 +749,12 @@ function Mode:ActivateInsertionPoints()
 	elseif self.Settings.AvailableForces.Value == 2 then
 		psdEnabled = false
 	end
+
+	return qrfEnabled, psdEnabled
+end
+
+function Mode:ActivateInsertionPoints()
+	local qrfEnabled, psdEnabled = self:ParseAvailableForces()
 
 	log:Debug('PSD', psdEnabled)
 	log:Debug('QRF', qrfEnabled)
@@ -688,6 +767,7 @@ function Mode:ActivateInsertionPoints()
 
 	local selectedVipInsertionTags = actor.GetTags(self.ActiveVipInsertionPoint)
 	local ipTags = ArrayItemsWithPrefix(selectedVipInsertionTags, 'IP-')
+	local possibleFallbackPoints = {}
 
 	-- Enable all linked InsertionPoints
 	for _, InsertionPoint in ipairs(self.InsertionPoints.NonVip) do
@@ -698,6 +778,9 @@ function Mode:ActivateInsertionPoints()
 			if actor.HasTag(InsertionPoint, tag) then
 				isLinkedIP = true
 				actor.SetActive(InsertionPoint, psdEnabled)
+				if psdEnabled then
+					table.insert(possibleFallbackPoints, 1, InsertionPoint)
+				end
 			end
 		end
 
@@ -705,9 +788,13 @@ function Mode:ActivateInsertionPoints()
 		if not isLinkedIP and qrfEnabled then
 			if not actor.HasTag(InsertionPoint, 'Hidden') then
 				actor.SetActive(InsertionPoint, true)
+				table.insert(possibleFallbackPoints, InsertionPoint)
 			end
 		end
 	end
+
+	self.FallbackInsertionPoint = possibleFallbackPoints[1]
+	log:Debug("Select fallback", self.FallbackInsertionPoint)
 end
 
 
