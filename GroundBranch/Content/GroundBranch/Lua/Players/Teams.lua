@@ -42,6 +42,7 @@ function Teams:Create(
     self.Display.ScoreMilestone = true
     self.Display.ObjectiveMessage = true
     self.Display.ObjectivePrompt = true
+    self.Display.Always = true
     self.PlayerScoreTypes = playerScoreTypes or {}
     self.TeamScoreTypes = teamScoreTypes or {}
     local allPlayerStarts = gameplaystatics.GetAllActorsOfClass('GroundBranch.GBPlayerStart')
