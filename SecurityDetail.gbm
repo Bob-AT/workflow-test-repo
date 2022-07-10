@@ -5,10 +5,11 @@
         "Common.gbm"
     ],
     "files" : [
-        "GroundBranch/Content/GroundBranch/Mission/*/SecurityDetail.mis",
-        "GroundBranch/Content/GroundBranch/Mission/*/SecurityDetailSemiPermissive.mis",
+        "GroundBranch/Content/GroundBranch/Mission/*/SecurityDetail*.mis",
         "GroundBranch/Content/GroundBranch/Lua/SecurityDetail.lua",
+        "GroundBranch/Content/GroundBranch/Lua/SecurityDetailValidate.lua",
         "GroundBranch/Content/GroundBranch/Lua/SecurityDetailSemiPermissive.lua",
+        "GroundBranch/Content/GroundBranch/Lua/SecurityDetailSemiPermissiveValidate.lua",
         "GroundBranch/Content/Localization/GroundBranch/en/SecurityDetail.csv",
         "GroundBranch/Content/GroundBranch/DefaultLoadouts/NoTeamCamouflage.kit"
     ]

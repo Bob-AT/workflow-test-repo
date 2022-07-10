@@ -2,12 +2,104 @@
 	Security Detail
 	PvE Ground Branch game mode by Bob/AT
 
-	Code is mostly based on 'BreakOut' by Jakub 'eelSkillz' Baranowski
+	Parts of the code are based on 'BreakOut' by Jakub 'eelSkillz' Baranowski.
+	We are not using OOP-style inheritance from BreakOut since the game modes are to distinct.
 
 	Notes for Mission Editing:
 
-		1. Start with a regular 'Kill Confirmed' mission
-		[...]
+	1. Before you start.
+
+		For 'Security Detail' it can make sense to start form a 'Kill Confirmed' mission.
+
+		For the following we'll assume that we are editing 'Small Town' with the following
+		well-known (from 'Intel Retrieval') InsertionPoint and ExtractionPoints:
+
+		- InsertionPoint: North-East, South-East, South-West
+		- ExtractionPoint: NE,SE,SW (near respective Spawn point); NWGate (Extraction behind Building A)
+
+		Let's assume that we want to add the following VIP InsertionPoints:
+			- VIP-North-East, VIP-South-East, VIP-South-West
+			- VIP-In-Building-B, VIP-In-Building-D
+			- VIP-In-Building-A (this one is just used in this text and not in the actual mission)
+
+	2. Understanding escape routes
+
+		Some game modes pick a random ExtractionPoint indiscriminately.
+		This would not work very well for 'Security Detail':
+		For example for VIP-In-Building-A the ExtractionPoint NWGate (Extraction behind Building A) would be
+		too easy to reach (it's very close, and you can use building A as partial cover).
+
+		Therefore, we use a different strategy: You, as a mission maker, define which escape routes
+		are allowed. This is done by linking the VIP InsertionPoints to ExtractionPoints via tags.
+
+	2. Tagging ExtractionPoints
+
+		Each ExtractionPoint MUST have at least one tag in the form of "Exfil-TXT" (where TXT is some text)
+		Multiple tags are allowed.
+		For example, we could tag:
+			- NE with "Exfil-NE" and "Exfil-East"
+			- SE with "Exfil-SE" and "Exfil-East"
+			- SW with "Exfil-SW" and "Exfil-West"
+			- NWGate with "Exfil-NW" and "Exfil-West"
+
+	3. Tagging PSD (personal security detail) InsertionPoints
+
+		Each non-VIP InsertionPoint MUST have at EXACTLY one tag in the form of "IP-TXT" (where TXT is some text).
+		For example, we could tag InsertionPoint South-West with "IP-SW".
+
+	4. Adding VIP InsertionPoints for 'Escort' scenario
+
+		In the escort scenario we escort the VIP from one edge of the map to another.
+		In this example we will create VIP-South-West:
+
+		4.1 Create an InsertionPoint
+				The name of the InsertionPoint is functionally irrelevant, however we suggest that you
+				use something like "VIP:South-West".
+		4.2 Add tag "VIP-Escort" and set the team id to 1.
+		4.3 Add PlayerStarts to the InsertionPoint via Editor button.
+				Note that there must be EXACTLY one PlayerStart per VIP InsertionPoint.
+				Therefore, delete 7 of the 8 PlayerStarts.
+		4.4 Link the VIP to his extractions
+				Add one or more Exfil tags to the VIP InsertionPoint
+		4.5 Link the VIP to his PSD.
+				Add the tag 'IP-SW' to the VIP InsertionPoint.
+				Note: When the 'Available Forces' OPS board setting is set to 'PSD only', only InsertionPoints linked
+				to the VIP InsertionPoint (via tag) will be enabled.
+
+	5. Adding VIP InsertionPoints for 'Exfil' scenario
+
+		In the exfil scenario we escort the VIP from the inside of the map to an edge of the map.
+
+		5.1 Create an InsertionPoint (same as 4.1)
+		5.2 Add tag "VIP-Exfil" and set the team id to 1.
+		5.3 Add PlayerStarts via Editor button. (same as 4.3)
+		5.4 Link the VIP to his extractions (same as 4.4)
+		5.5 Create PSD InsertionPoint
+				Add an InsertionPoint with team id 1. Use a name like "Building-B"
+				Add the tag "Hidden" and a tag like "IP-B" to the InsertionPoint
+		5.6 Link the VIP to his PSD.
+				Add the tag 'IP-B' to the VIP InsertionPoint.
+				When the 'Available Forces' OPS board setting is set to 'PSD only', only InsertionPoints linked
+				to the VIP InsertionPoint (via tag) will be enabled.
+		5.6 Create PSD PlayerStarts
+				Create 7 (or 8) PlayerStarts
+				Move the VIP PlayerStart so that the VIP is covered by his PSD.
+
+	6. Creating 'Restricted' InsertionPoints
+
+		By default, the script will put late comers (players that have not selected an InsertionPoint)
+		to the VIP's PSD.
+		For some PSD InsertionPoints you might not have enough space to place 7 PlayerStarts.
+		In such cases tag the InsertionPoint with "Restricted" so that script will not use this
+		InsertionPoint for late comers.
+
+	7. Testing
+
+		- If you run "Validate" in the mission editor the script will print all escape routes into
+		the GB Log file.
+		- Individual InsertionPoints can be activated on the OPS board via console command
+			DebugGameCommand reloadmissionscript loc=2
+
 ]]--
 
 local Teams = require('Players.Teams')
@@ -17,8 +109,6 @@ local ObjectiveExfiltrate = require('Objectives.Exfiltrate')
 local Logger = require("Common.Logger")
 local AvoidFatality = require("Objectives.AvoidFatality")
 local NoSoftFail = require("Objectives.NoSoftFail")
-
-local SCENARIO_OFFSET = 2
 
 local log = Logger.new('SecDet')
 log:SetLogLevel('DEBUG')
@@ -31,12 +121,20 @@ local Mode = {
 	UseRounds = true,
 	MissionTypeDescription = '[Solo/Co-Op] Extract the principal',
 	StringTables = {'SecurityDetail'},
+	Config = {
+		-- placeholder
+		SoftFailEnabled = true,
+		-- placeholder
+		CollateralDamageThreshold = 3,
+		-- Whether we automatically select the VIP
+		AutoSelectVip = true
+	},
 	Settings = {
 		Scenario = {
 			Min = 0,
-			Max = 10, -- hard max
+			Max = 3,
 			Value = 0,
-			AdvancedSetting = true,
+			AdvancedSetting = false,
 		},
 		AvailableForces = {
 			Min = 0,
@@ -55,6 +153,12 @@ local Mode = {
 			Max = 4,
 			Value = 2,
 			AdvancedSetting = false,
+		},
+		VIP = {
+			Min = 0,
+			Max = 1,
+			Value = 1,
+			AdvancedSetting = true,
 		},
 		RoundTime = {
 			Min = 5,
@@ -156,13 +260,13 @@ local Mode = {
 		AnyVipScenario = {},
 		NonVip = {}
 	},
+	NumberOfLocations = 0,
+	SelectedLocationNumber = 0,
 	ExfilTagToExfils = {},
 	ActiveVipInsertionPoint = nil,
-	VipPlayerName = '',
+	VipPlayerName = false,
 	-- Whether we have non-combatants in the AO
 	IsSemiPermissive = false,
-	-- The max. amount of collateral damage before failing the mission
-	CollateralDamageThreshold = 3,
 	-- Ref. to logger
 	Logger = log,
 	-- Fallback locations
@@ -189,8 +293,18 @@ local function PickRandom(tbl)
 	if len == 0 then
 		return nil
 	end
+	if len == 1 then
+		return tbl[1]
+	end
 
 	return tbl[umath.random(len)]
+end
+
+local function DecorateUserData(userdata)
+	local mt = getmetatable(userdata) or {}
+	mt.__tostring = function(obj)
+		return actor.GetName(obj)
+	end
 end
 --#endregion
 
@@ -225,11 +339,9 @@ function Mode:PreInit()
 	self.Objectives.ProtectVIP = AvoidFatality.new('ProtectVIP')
 
 	for _, ip in ipairs(gameplaystatics.GetAllActorsOfClass('GroundBranch.GBInsertionPoint')) do
-		getmetatable(ip).__tostring = function(obj)
-			return actor.GetName(obj)
-		end
+		DecorateUserData(ip)
 
-		if not actor.HasTag('DummyIP') then
+		if not actor.HasTag('Asset') then
 			table.insert(self.InsertionPoints.All, ip)
 
 			if actor.HasTag(ip, 'VIP-Exfil') then
@@ -242,17 +354,23 @@ function Mode:PreInit()
 		end
 	end
 
+
+	local tostring_comp = function(a, b)
+		return tostring(a) < tostring(b)
+	end
+
+	table.sort(self.InsertionPoints.VipExfilScenario, tostring_comp)
 	for _, ip in ipairs(self.InsertionPoints.VipExfilScenario) do
 		table.insert(self.InsertionPoints.AnyVipScenario, ip)
 	end
 
+	table.sort(self.InsertionPoints.VipEscortScenario, tostring_comp)
 	for _, ip in ipairs(self.InsertionPoints.VipEscortScenario) do
 		table.insert(self.InsertionPoints.AnyVipScenario, ip)
 	end
 
-	if #self.InsertionPoints.AnyVipScenario < 10 then
-		self.Settings.Scenario.Max = SCENARIO_OFFSET + #self.InsertionPoints.AnyVipScenario
-	end
+	self.NumberOfLocations = #self.InsertionPoints.AnyVipScenario
+	self.SelectedLocationNumber = 0
 
 	self.ExfilTagToExfils = {}
 
@@ -268,6 +386,16 @@ function Mode:PreInit()
 	end
 
 	log:Debug('ExfilTags', self.ExfilTagToExfils)
+
+	self.ExfilRecords = {}
+	for idx, ep in ipairs(self.Objectives.Exfiltrate.Points.All) do
+		DecorateUserData(ep)
+		local record = { Index = idx, Actor = ep, Name=actor.GetName(ep) , TagSet = {}}
+		for _, tag in ipairs(ArrayItemsWithPrefix(actor.GetTags(ep), 'Exfil-')) do
+			record.TagSet[tag] = true
+		end
+		table.insert(self.ExfilRecords, record)
+	end
 end
 
 function Mode:PostInit()
@@ -278,15 +406,104 @@ function Mode:PostInit()
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'ExfiltrateBluFor', 1)
 end
 
+function Mode:OnProcessCommand(command, param)
+	print("OnProcessCommand('" .. command .. "', '" .. param .. "')")
+
+	if not (command == 'reloadmissionscript' or command == 'mode') then
+		return
+	end
+	local param = tostring(param)
+	local message = {}
+	local use_main = false
+	local duration = 6
+
+	if param == 'help' then
+		use_main = true
+		duration = 60
+		table.insert(message, "==== admin " .. command .. " loc=NUMBER ====")
+		table.insert(message, "Select a location. 0=Random, Maximum=" .. self.NumberOfLocations)
+		table.insert(message, "")
+		table.insert(message, "==== admin " .. command .. " rand [obj|exfil] ====")
+		table.insert(message, "Randomize objectives|exfil")
+		table.insert(message, "")
+		table.insert(message, "==== admin " .. command .. " clear ====")
+		table.insert(message, "Clears the screen")
+		table.insert(message, "")
+		table.insert(message, "==== NOTE ====")
+		table.insert(message, "NOTE: In single player use `DebugGameCommand` instead of `admin`")
+	elseif param == 'rand' or param == 'rand obj' then
+		table.insert(message, "Randomizing objectives")
+		self:RandomizeObjectives()
+	elseif param == 'rand' or param == 'rand exfil' then
+		table.insert(message, "Randomizing exfil")
+		self:RandomizeExfil()
+	elseif param == 'clear' then
+		duration = 0.001
+	elseif string.match(param,"^loc") then
+		local m = tonumber(string.match(param, "loc=(%d+)")) or 0
+		if m > 0 and m <= self.NumberOfLocations then
+			table.insert(message,"Admin selected location " .. tostring(m) .. ".")
+			self.SelectedLocationNumber = tonumber(m)
+		else
+			table.insert(message,"Admin selected invalid location. Using random one.")
+			self.SelectedLocationNumber = 0
+		end
+		self:RandomizeObjectives()
+	else
+		table.insert(message, "Invalid parameter: " .. param)
+		table.insert(message,"Use admin " .. command .. " help")
+	end
+
+	gamemode.BroadcastGameMessage(table.concat(message, "\n"), 'Engine', -duration)
+	gamemode.BroadcastGameMessage(table.concat(message, "\n"), 'Upper', -duration)
+end
+
+function Mode:Validate(assert)
+	for _, ip in ipairs(self.InsertionPoints.AnyVipScenario) do
+		local points = {}
+		for _, record in ipairs(self:GetPossibleExfilPoints(ip)) do
+			table.insert(points, record.Name)
+		end
+		assert("VIP " .. tostring(ip) .. " has escape route", #points > 0, points)
+	end
+end
+
+function Mode:GetPossibleExfilPoints(InsertionPoint)
+	local tags = ArrayItemsWithPrefix(actor.GetTags(InsertionPoint), 'Exfil-')
+	local points = {}
+
+	for _, exfilRecord in ipairs(self.ExfilRecords) do
+		for _, tag in ipairs(tags) do
+			if exfilRecord.TagSet[tag] then
+				table.insert(points, exfilRecord)
+				break
+			end
+		end
+	end
+
+	return points
+end
+
 --#endregion
 
 --#region Common
 
 function Mode:EnsureVipPlayerPresent(isLate)
-	if self.VipPlayerName ~= '' then
+	if self.VipPlayerName or not self.Config.AutoSelectVip then
 		return
 	end
 
+	local vipPlayer = self:GetRandomVipPlayer()
+	local message = 'Picked random VIP'
+	if isLate then
+		message = message .. '. Might be too late to change insertion point.'
+	end
+	gamemode.BroadcastGameMessage(message, 'Engine', 11.5)
+	self.VipPlayerName = player.GetName(vipPlayer)
+	player.SetInsertionPoint(vipPlayer, self.ActiveVipInsertionPoint)
+end
+
+function Mode:GetRandomVipPlayer()
 	local allPlayers = gamemode.GetPlayerList(self.PlayerTeams.BluFor.TeamId, true)
 	local playersInReadyRoom = {}
 	local playersWithoutInsertionPoint = {}
@@ -309,23 +526,15 @@ function Mode:EnsureVipPlayerPresent(isLate)
 	else
 		return
 	end
-
-	local message = 'Picked random VIP'
-	if isLate then
-		message = message .. '. Might be too late to change insertion point.'
-	end
-	gamemode.BroadcastGameMessage(message, 'Engine', 11.5)
-	self.VipPlayerName = player.GetName(vipPlayer)
-	player.SetInsertionPoint(vipPlayer, self.ActiveVipInsertionPoint)
+	return vipPlayer
 end
 
 function Mode:OnRoundStageSet(RoundStage)
 	log:Debug('Started round stage', RoundStage)
 
-	print(RoundStage .. ' -> ' .. gamemode.GetRoundStageTime())
 	timer.ClearAll()
 	if RoundStage == 'PostRoundWait' or RoundStage == 'TimeLimitReached' then
-		self.VipPlayerName = ''
+		self.VipPlayerName = false
 	elseif RoundStage == 'WaitingForReady' then
 		self:PreRoundCleanUp()
 		self:RandomizeObjectives()
@@ -336,7 +545,11 @@ function Mode:OnRoundStageSet(RoundStage)
 		self:SetUpOpForStandardSpawns()
 		self:SpawnOpFor()
 
-		local message = 'Protect ' .. self.VipPlayerName .. '.'
+		local message = 'No VIP. Patrol to Exfil.'
+		if self.VipPlayerName then
+			message = 'Protect ' .. self.VipPlayerName
+		end
+
 		gamemode.BroadcastGameMessage(message, "Upper", 11.5)
 	elseif RoundStage == 'InProgress' then
 		self.Objectives.Exfiltrate:SelectedPointSetActive(true)
@@ -377,9 +590,18 @@ function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 					local message = 'Collateral damage by player ' .. player.GetName(KillerController)
 					self.PlayerTeams.BluFor.Script:DisplayMessageToAllPlayers(message, 'Engine', 5.0, 'Always')
 
-					if self.Objectives.AvoidFatality:GetFatalityCount() >= self.CollateralDamageThreshold then
+					if self.Objectives.AvoidFatality:GetFatalityCount() >= self.Config.CollateralDamageThreshold then
 						self.Objectives.NoSoftFail:Fail()
-						self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('SoftFail', 'Upper', 10.0, 'Always')
+						if self.Config.SoftFailEnabled then
+							-- Fail soft
+							self.PlayerTeams.BluFor.Script:DisplayMessageToAlivePlayers('SoftFail', 'Upper', 10.0, 'Always')
+						else
+							-- Fail hard
+							self:UpdateCompletedObjectives()
+							gamemode.AddGameStat('Summary=SoftFail')
+							gamemode.AddGameStat('Result=None')
+							gamemode.SetRoundStage('PostRoundWait')
+						end
 					end
 				elseif killerTeam == self.PlayerTeams.BluFor.TeamId then
 					self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'KillStandard')
@@ -401,7 +623,7 @@ function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 						log:Info('VIP killed', self.VipPlayerName)
 						self.Objectives.ProtectVIP:ReportFatality()
 					elseif gamemode.GetRoundStage() == 'InProgress' and (not self.PlayerTeams.BluFor.Script:IsWipedOut()) then
-
+						-- do nothing
 					end
 				end
 
@@ -426,7 +648,11 @@ end
 --#region Player Status
 
 function Mode:PlayerInsertionPointChanged(PlayerState, ip)
-	--print('PlayerInsertionPointChanged')
+	local playerName = player.GetName(PlayerState)
+	if playerName == self.VipPlayerName then
+		self.VipPlayerName = false
+	end
+
 	if ip == nil then
 		-- Player unchecked insertion point.
 		timer.Set(
@@ -438,17 +664,21 @@ function Mode:PlayerInsertionPointChanged(PlayerState, ip)
 		)
 	else
 		-- Player checked insertion point.
-		timer.Set(
-			self.Timers.CheckReadyUp.Name,
-			self,
-			self.CheckReadyUpTimer,
-			self.Timers.CheckReadyUp.TimeStep,
-			false
-		)
-
 		if self:IsVipInsertionPoint(ip) then
-			self.VipPlayerName = player.GetName(PlayerState)
-			log:Info('VIP insertion point selected', self.VipPlayerName)
+			log:Info('VIP insertion point selected', playerName)
+			self.VipPlayerName = playerName
+		end
+
+		if false then
+			gamemode.SetRoundStage('ReadyCountdown')
+		else
+			timer.Set(
+					self.Timers.CheckReadyUp.Name,
+					self,
+					self.CheckReadyUpTimer,
+					self.Timers.CheckReadyUp.TimeStep,
+					false
+			)
 		end
 	end
 end
@@ -688,9 +918,10 @@ function Mode:OnMissionSettingChanged(Setting, NewValue)
 			self:RandomizeObjectives()
 		end
 		self.Settings.Scenario.LastValue = NewValue
-	end
-	if Setting == 'AvailableForces' then
+	elseif Setting == 'AvailableForces' then
 		self:ActivateInsertionPoints()
+	elseif Setting == 'VIP' then
+		self.Config.AutoSelectVip = (self.Settings.VIP == 1)
 	end
 end
 
@@ -702,28 +933,27 @@ function Mode:RandomizeObjectives()
 	log:Debug('RandomizeObjectives')
 
 	local eligibleVipPoints
-	if self.Settings.Scenario.Value == 0 then
+	if self.SelectedLocationNumber ~= 0 then
+		local ip = self.InsertionPoints.AnyVipScenario[self.SelectedLocationNumber]
+		self.SelectedLocationNumber = 0 -- reset it for next round
+
+		eligibleVipPoints = { ip }
+		log:Debug('Selected insertion', ip)
+	elseif self.Settings.Scenario.Value == 0 then
 		eligibleVipPoints = self.InsertionPoints.AnyVipScenario
 	elseif self.Settings.Scenario.Value == 1 then
 		eligibleVipPoints = self.InsertionPoints.VipEscortScenario
 	elseif self.Settings.Scenario.Value == 2 then
 		eligibleVipPoints = self.InsertionPoints.VipExfilScenario
-	else
-		local index = self.Settings.Scenario.Value - SCENARIO_OFFSET
-
-		if self.Settings.Scenario.Value > #self.InsertionPoints.AnyVipScenario then
-			index = SCENARIO_OFFSET + 1
-		end
-
-		local ip = self.InsertionPoints.AnyVipScenario[index]
-		eligibleVipPoints = { ip }
-
-		log:Debug('Selected insertion', ip)
 	end
 
 	-- Pick a random VIP InsertionPoint
 	self.ActiveVipInsertionPoint = PickRandom(eligibleVipPoints)
+	self:RandomizeExfil()
+	self:ActivateInsertionPoints()
+end
 
+function Mode:RandomizeExfil()
 	local tags = actor.GetTags(self.ActiveVipInsertionPoint)
 
 	-- Find possible exfil points
@@ -736,8 +966,6 @@ function Mode:RandomizeObjectives()
 	local exfilActorAndIndex = PickRandom(eligibleExfils)
 	log:Debug('Selected exfil', exfilActorAndIndex)
 	self.Objectives.Exfiltrate:SelectPoint(true, exfilActorAndIndex.Index)
-
-	self:ActivateInsertionPoints()
 end
 
 function Mode:ParseAvailableForces()
@@ -754,6 +982,13 @@ function Mode:ParseAvailableForces()
 end
 
 function Mode:ActivateInsertionPoints()
+	local function isRestricted(ip)
+		return actor.HasTag(ip, 'Restricted')
+	end
+	local function isHidden(ip)
+		return actor.HasTag(ip, 'Hidden')
+	end
+
 	local qrfEnabled, psdEnabled = self:ParseAvailableForces()
 
 	log:Debug('PSD', psdEnabled)
@@ -767,36 +1002,51 @@ function Mode:ActivateInsertionPoints()
 
 	local selectedVipInsertionTags = actor.GetTags(self.ActiveVipInsertionPoint)
 	local ipTags = ArrayItemsWithPrefix(selectedVipInsertionTags, 'IP-')
+
 	local possibleFallbackPoints = {}
+	local havePSDFallback = false
 
 	-- Enable all linked InsertionPoints
-	for _, InsertionPoint in ipairs(self.InsertionPoints.NonVip) do
-		local isLinkedIP = false
+	for _, insertionPoint in ipairs(self.InsertionPoints.NonVip) do
+		--local isLinkedIP = false
 
 		-- PSD insertion points
 		for _, tag in ipairs(ipTags) do
-			if actor.HasTag(InsertionPoint, tag) then
-				isLinkedIP = true
-				actor.SetActive(InsertionPoint, psdEnabled)
-				if psdEnabled then
-					table.insert(possibleFallbackPoints, 1, InsertionPoint)
+			if actor.HasTag(insertionPoint, tag) then
+				actor.SetActive(insertionPoint, psdEnabled)
+
+				if psdEnabled and not isRestricted(insertionPoint)  then
+					havePSDFallback = true
+					table.insert(possibleFallbackPoints, 1, insertionPoint)
 				end
 			end
 		end
 
-		-- Enable QRF points
-		if not isLinkedIP and qrfEnabled then
-			if not actor.HasTag(InsertionPoint, 'Hidden') then
-				actor.SetActive(InsertionPoint, true)
-				table.insert(possibleFallbackPoints, InsertionPoint)
+		if not isHidden(insertionPoint) and not isRestricted(insertionPoint) then
+			-- Enable QRF points
+			if qrfEnabled then
+				actor.SetActive(insertionPoint, true)
 			end
+
+			-- Even if we don't have qrfEnabled, we still might need
+			-- an InsertionPoint in case all other active InsertionPoints
+			-- are 'Restricted'
+			table.insert(possibleFallbackPoints, insertionPoint)
 		end
 	end
 
-	self.FallbackInsertionPoint = possibleFallbackPoints[1]
-	log:Debug("Select fallback", self.FallbackInsertionPoint)
+	if #possibleFallbackPoints > 0 then
+		if havePSDFallback then
+			self.FallbackInsertionPoint = possibleFallbackPoints[1]
+		else
+			self.FallbackInsertionPoint = PickRandom(possibleFallbackPoints)
+		end
+		actor.SetActive(self.FallbackInsertionPoint, true)
+		log:Debug("Select fallback", self.FallbackInsertionPoint)
+	else
+		log:Error("No fallback points found")
+	end
 end
-
 
 function Mode:UpdateCompletedObjectives()
 	local completedObjectives = {}

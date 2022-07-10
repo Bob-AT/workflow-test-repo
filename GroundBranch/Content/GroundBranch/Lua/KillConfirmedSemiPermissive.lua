@@ -10,12 +10,21 @@
 		1. Start with a regular 'Kill Confirmed' mission
 		2. Add non-combatants
 			- use team id = 10
-			- one of the unarmed 'Civ*' kits)
+			- one of the unarmed 'Civ*' kits
+
+	Notes on CollateralDamageThreshold:
+
+		The default value is 3. It can be changed by admins.
+		Remember: once is a mistake, twice is a coincidence, thrice is a habit.
 ]]--
 
--- Set to 0 (zero) to disable the SOFT FAIL
-local ADMIN_SOFT_FAIL_ENABLED = 1
---
+local AdminConfiguration = {
+	-- If you want to disable soft fail, change the next line to:
+	--   SoftFailEnabled = false
+	SoftFailEnabled = true,
+	-- The max. amount of collateral damage before failing the mission
+	CollateralDamageThreshold = 3
+}
 
 
 local Tables = require("Common.Tables")
@@ -45,14 +54,12 @@ super.Objectives.AvoidFatality = AvoidFatality.new('NoCollateralDamage')
 super.Objectives.NoSoftFail = NoSoftFail.new()
 
 -- Our sub-class of the singleton
-local Mode = setmetatable({}, { __index = super })
+local Mode = setmetatable({Config = {}}, { __index = super })
 
-Mode.Config = {
-	SoftFailEnabled = not not ADMIN_SOFT_FAIL_ENABLED -- coerce bool
-}
--- The max. amount of collateral damage before failing the mission
-Mode.CollateralDamageThreshold = 3
-
+function Mode:PreInit()
+	super.PreInit(self)
+	for k,v in pairs(AdminConfiguration) do self.Config[k] = v end
+end
 
 function Mode:PostInit()
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'NeutralizeHVTs', 1)
@@ -97,7 +104,7 @@ function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 				local message = 'Collateral damage by ' .. player.GetName(KillerController)
 				self.PlayerTeams.BluFor.Script:DisplayMessageToAllPlayers(message, 'Engine', 5.0, 'ScoreMilestone')
 
-				if self.Objectives.AvoidFatality:GetFatalityCount() >= self.CollateralDamageThreshold then
+				if self.Objectives.AvoidFatality:GetFatalityCount() >= self.Config.CollateralDamageThreshold then
 					self.Objectives.NoSoftFail:Fail()
 					if self.Config.SoftFailEnabled then
 						-- Fail soft

@@ -4,8 +4,12 @@
 
 	Notes for Mission Editing:
 
-		1. Start with a regular 'Kill Confirmed' mission
-		[...]
+		1. Start with a regular 'SecurityDetail' mission
+		2. Add an InsertionPoint with tag 'Asset'
+		3. Add PlayerStarts to InsertionPoint via Editor button.
+				Note that there must be EXACTLY one PlayerStart.
+				Therefore, delete 7 of the 8 PlayerStarts.
+		4. Add orphaned (Group=None) PlayerStarts with tag 'Asset'
 ]]--
 
 local Teams = require('Players.Teams')
@@ -49,40 +53,36 @@ super.Settings = {
 		Value = 60,
 		AdvancedSetting = false,
 	},
-	Location = {
-		Min = 0,
-		Max = 10, -- hard max
-		Value = 0,
-		AdvancedSetting = true
-	}
 }
 -- Use separate MissionTypeDescription and StringTables
 super.MissionTypeDescription = '[Solo/Co-Op] Extract the asset'
 super.StringTables = {'AssetExtraction'}
-super.IsSemiPermissive = true -- TODO
+super.IsSemiPermissive = false
 
 -- Our sub-class of the singleton
 local Mode = setmetatable({}, { __index = super })
 
--- New properties
-Mode.VipStarts = {}
-Mode.VipStartForThisRound = nil
-
---#region Helpers
-local function PickRandom(tbl)
-	local len = #tbl
-
-	if len == 0 then
-		return nil
+local function DecorateUserData(userdata)
+	local mt = getmetatable(userdata) or {}
+	mt.__tostring = function(obj)
+		return actor.GetName(obj)
 	end
-
-	return tbl[math.random(len)]
 end
---#endregion
 
 --#region Preparation
 function Mode:PreInit()
 	log:Debug('PreInit')
+
+	self.VipStartForThisRound = {}
+	self.VipStarts = {}
+	local vipStarts = gameplaystatics.GetAllActorsOfClassWithTag('GroundBranch.GBPlayerStart', 'Asset')
+	for _, start in ipairs(vipStarts) do
+		DecorateUserData(start)
+		table.insert(self.VipStarts, start)
+		log:Debug("VIP start", start)
+	end
+	self.NumberOfLocations = #self.VipStarts
+	self.SelectedLocationNumber = 0
 
 	if self.IsSemiPermissive then
 		self.Objectives.AvoidFatality = AvoidFatality.new('NoCollateralDamage')
@@ -109,53 +109,74 @@ function Mode:PreInit()
 	)
 	self.Objectives.ProtectVIP = AvoidFatality.new('ProtectVIP')
 
+	self.NonAssetInsertionPoints = {}
 	for _, ip in ipairs(gameplaystatics.GetAllActorsOfClass('GroundBranch.GBInsertionPoint')) do
+		DecorateUserData(ip)
 		if actor.HasTag(ip, 'Hidden') or actor.HasTag(ip, 'VIP-Exfil') or actor.HasTag(ip, 'VIP-Escort') then
 			-- Hide 'SecurityDetail' spawns
 			actor.SetActive(ip, false)
+		elseif actor.HasTag('Asset') then
+			actor.SetActive(ip, true)
 		else
 			actor.SetActive(ip, true)
+			table.insert(self.NonAssetInsertionPoints, ip)
 		end
 	end
-
-	self.VipStarts = gameplaystatics.GetAllActorsOfClassWithTag('GroundBranch.GBPlayerStart', 'Asset')
-
-	if #self.VipStarts < 10 then
-		self.Settings.Location.Max = #self.VipStarts
-	end
+	self.FallbackInsertionPoint = self.NonAssetInsertionPoints[1]
 end
 --#endregion
 
+function Mode:Validate()
+end
+
 --#region Common
 function Mode:IsVipInsertionPoint(ip)
-	return actor.HasTag(ip, 'DummyIP')
+	return actor.HasTag(ip, 'Asset')
 end
 
 function Mode:GetSpawnInfo(PlayerState)
 	log:Info('GetSpawnInfo', player.GetName(PlayerState))
 
-	if player.GetName(PlayerState) == self.VipPlayerId then
+	if player.GetName(PlayerState) == self.VipPlayerName then
 		log:Info('Special pick for ', player.GetName(PlayerState))
 		return self.VipStartForThisRound
 	end
 	return nil
 end
 
-function Mode:OnMissionSettingChanged(Setting, NewValue)
-	print('Setting ' .. Setting)
+function Mode:OnMissionSettingChanged()
+	self.config.AutoSelectVip = true
 	self:RandomizeObjectives()
 end
 
-function Mode:RandomizeObjectives()
-	log:Debug('RandomizeObjectives')
-	self.Objectives.Exfiltrate:SelectPoint(true)
-
-	local index = self.Settings.Location.Value
-	if index == 0 then
-		index = math.random(#self.VipStarts)
+function Mode:EnsureVipPlayerPresent(isLate)
+	if self.VipPlayerName then
+		return
 	end
-	self.VipStartForThisRound = self.VipStarts[index]
+
+	local vipPlayer = self:GetRandomVipPlayer()
+	self.VipPlayerName = player.GetName(vipPlayer)
+
+	local message = 'Picked random Asset.'
+	if isLate then
+		message = message .. '..'
+	end
+	gamemode.BroadcastGameMessage(message, 'Engine', 11.5)
 end
+
+function Mode:RandomizeObjectives()
+	if self.SelectedLocationNumber == 0 then
+		self.SelectedLocationNumber = umath.random(#self.VipStarts)
+	end
+	self.VipStartForThisRound = self.VipStarts[self.SelectedLocationNumber]
+	log:Debug('RandomizeObjectives', self.VipStartForThisRound)
+	self:RandomizeExfil()
+end
+
+function Mode:RandomizeExfil()
+	self.Objectives.Exfiltrate:SelectPoint(true)
+end
+
 --#endregion
 
 return Mode

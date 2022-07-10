@@ -1,0 +1,3 @@
+local ValidatorClass = require('Common.Validator')
+local validator = ValidatorClass.new('SecurityDetail')
+return validator
