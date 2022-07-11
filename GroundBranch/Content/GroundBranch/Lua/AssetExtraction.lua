@@ -112,7 +112,7 @@ function Mode:PreInit()
 	self.NonAssetInsertionPoints = {}
 	for _, ip in ipairs(gameplaystatics.GetAllActorsOfClass('GroundBranch.GBInsertionPoint')) do
 		DecorateUserData(ip)
-		if actor.HasTag(ip, 'Hidden') or actor.HasTag(ip, 'VIP-Exfil') or actor.HasTag(ip, 'VIP-Escort') then
+		if actor.HasTag(ip, 'Hidden') or actor.HasTag(ip, 'VIP-Exfil') or actor.HasTag(ip, 'VIP-Travel') then
 			-- Hide 'SecurityDetail' spawns
 			actor.SetActive(ip, false)
 		elseif actor.HasTag('Asset') then

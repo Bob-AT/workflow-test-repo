@@ -47,7 +47,7 @@
 		Each non-VIP InsertionPoint MUST have at EXACTLY one tag in the form of "IP-TXT" (where TXT is some text).
 		For example, we could tag InsertionPoint South-West with "IP-SW".
 
-	4. Adding VIP InsertionPoints for 'Escort' scenario
+	4. Adding VIP InsertionPoints for 'Travel' scenario
 
 		In the escort scenario we escort the VIP from one edge of the map to another.
 		In this example we will create VIP-South-West:
@@ -55,7 +55,7 @@
 		4.1 Create an InsertionPoint
 				The name of the InsertionPoint is functionally irrelevant, however we suggest that you
 				use something like "VIP:South-West".
-		4.2 Add tag "VIP-Escort" and set the team id to 1.
+		4.2 Add tag "VIP-Travel" and set the team id to 1.
 		4.3 Add PlayerStarts to the InsertionPoint via Editor button.
 				Note that there must be EXACTLY one PlayerStart per VIP InsertionPoint.
 				Therefore, delete 7 of the 8 PlayerStarts.
@@ -255,7 +255,7 @@ local Mode = {
 	},
 	InsertionPoints = {
 		All = {},
-		VipEscortScenario = {},
+		VipTravelScenario = {},
 		VipExfilScenario = {},
 		AnyVipScenario = {},
 		NonVip = {}
@@ -346,8 +346,8 @@ function Mode:PreInit()
 
 			if actor.HasTag(ip, 'VIP-Exfil') then
 				table.insert(self.InsertionPoints.VipExfilScenario, ip)
-			elseif actor.HasTag(ip, 'VIP-Escort') then
-				table.insert(self.InsertionPoints.VipEscortScenario, ip)
+			elseif actor.HasTag(ip, 'VIP-Travel') then
+				table.insert(self.InsertionPoints.VipTravelScenario, ip)
 			else
 				table.insert(self.InsertionPoints.NonVip, ip)
 			end
@@ -364,8 +364,8 @@ function Mode:PreInit()
 		table.insert(self.InsertionPoints.AnyVipScenario, ip)
 	end
 
-	table.sort(self.InsertionPoints.VipEscortScenario, tostring_comp)
-	for _, ip in ipairs(self.InsertionPoints.VipEscortScenario) do
+	table.sort(self.InsertionPoints.VipTravelScenario, tostring_comp)
+	for _, ip in ipairs(self.InsertionPoints.VipTravelScenario) do
 		table.insert(self.InsertionPoints.AnyVipScenario, ip)
 	end
 
@@ -684,7 +684,7 @@ function Mode:PlayerInsertionPointChanged(PlayerState, ip)
 end
 
 function Mode:IsVipInsertionPoint(ip)
-	return actor.HasTag(ip, 'VIP-Escort') or actor.HasTag(ip, 'VIP-Exfil')
+	return actor.HasTag(ip, 'VIP-Travel') or actor.HasTag(ip, 'VIP-Exfil')
 end
 
 function Mode:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
@@ -942,7 +942,7 @@ function Mode:RandomizeObjectives()
 	elseif self.Settings.Scenario.Value == 0 then
 		eligibleVipPoints = self.InsertionPoints.AnyVipScenario
 	elseif self.Settings.Scenario.Value == 1 then
-		eligibleVipPoints = self.InsertionPoints.VipEscortScenario
+		eligibleVipPoints = self.InsertionPoints.VipTravelScenario
 	elseif self.Settings.Scenario.Value == 2 then
 		eligibleVipPoints = self.InsertionPoints.VipExfilScenario
 	end
