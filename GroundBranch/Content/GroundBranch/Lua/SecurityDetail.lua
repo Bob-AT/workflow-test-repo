@@ -34,18 +34,18 @@
 
 	2. Tagging ExtractionPoints
 
-		Each ExtractionPoint MUST have at least one tag in the form of "Exfil-TXT" (where TXT is some text)
+		Each ExtractionPoint MUST have at least one tag in the form of 'Exfil-TXT' (where TXT is some text)
 		Multiple tags are allowed.
 		For example, we could tag:
-			- NE with "Exfil-NE" and "Exfil-East"
-			- SE with "Exfil-SE" and "Exfil-East"
-			- SW with "Exfil-SW" and "Exfil-West"
-			- NWGate with "Exfil-NW" and "Exfil-West"
+			- NE with 'Exfil-NE' and 'Exfil-East'
+			- SE with 'Exfil-SE' and 'Exfil-East'
+			- SW with 'Exfil-SW' and 'Exfil-West'
+			- NWGate with 'Exfil-NW' and 'Exfil-West'
 
 	3. Tagging PSD (personal security detail) InsertionPoints
 
-		Each non-VIP InsertionPoint MUST have at EXACTLY one tag in the form of "IP-TXT" (where TXT is some text).
-		For example, we could tag InsertionPoint South-West with "IP-SW".
+		Each non-VIP InsertionPoint MUST have at EXACTLY one tag in the form of 'IP-TXT' (where TXT is some text).
+		For example, we could tag InsertionPoint South-West with 'IP-SW'.
 
 	4. Adding VIP InsertionPoints for 'Travel' scenario
 
@@ -54,8 +54,8 @@
 
 		4.1 Create an InsertionPoint
 				The name of the InsertionPoint is functionally irrelevant, however we suggest that you
-				use something like "VIP:South-West".
-		4.2 Add tag "VIP-Travel" and set the team id to 1.
+				use something like 'VIP:South-West'.
+		4.2 Add tag 'VIP-Travel' and set the team id to 1.
 		4.3 Add PlayerStarts to the InsertionPoint via Editor button.
 				Note that there must be EXACTLY one PlayerStart per VIP InsertionPoint.
 				Therefore, delete 7 of the 8 PlayerStarts.
@@ -71,12 +71,12 @@
 		In the exfil scenario we escort the VIP from the inside of the map to an edge of the map.
 
 		5.1 Create an InsertionPoint (same as 4.1)
-		5.2 Add tag "VIP-Exfil" and set the team id to 1.
+		5.2 Add tag 'VIP-Exfil' and set the team id to 1.
 		5.3 Add PlayerStarts via Editor button. (same as 4.3)
 		5.4 Link the VIP to his extractions (same as 4.4)
 		5.5 Create PSD InsertionPoint
-				Add an InsertionPoint with team id 1. Use a name like "Building-B"
-				Add the tag "Hidden" and a tag like "IP-B" to the InsertionPoint
+				Add an InsertionPoint with team id 1. Use a name like 'Building-B'
+				Add the tag 'Hidden' and a tag like 'IP-B' to the InsertionPoint
 		5.6 Link the VIP to his PSD.
 				Add the tag 'IP-B' to the VIP InsertionPoint.
 				When the 'Available Forces' OPS board setting is set to 'PSD only', only InsertionPoints linked
@@ -90,25 +90,26 @@
 		By default, the script will put late comers (players that have not selected an InsertionPoint)
 		to the VIP's PSD.
 		For some PSD InsertionPoints you might not have enough space to place 7 PlayerStarts.
-		In such cases tag the InsertionPoint with "Restricted" so that script will not use this
+		In such cases tag the InsertionPoint with 'Restricted' so that script will not use this
 		InsertionPoint for late comers.
 
 	7. Testing
 
-		- If you run "Validate" in the mission editor the script will print all escape routes into
+		- If you run 'Validate' in the mission editor the script will print all escape routes into
 		the GB Log file.
 		- Individual InsertionPoints can be activated on the OPS board via console command
 			DebugGameCommand reloadmissionscript loc=2
 
 ]]--
 
-local Teams = require('Players.Teams')
-local SpawnsGroups = require('Spawns.Groups')
-local SpawnsCommon = require('Spawns.Common')
+local AvoidFatality = require('Objectives.AvoidFatality')
+local Logger = require('Common.Logger')
+local NoSoftFail = require('Objectives.NoSoftFail')
 local ObjectiveExfiltrate = require('Objectives.Exfiltrate')
-local Logger = require("Common.Logger")
-local AvoidFatality = require("Objectives.AvoidFatality")
-local NoSoftFail = require("Objectives.NoSoftFail")
+local SpawnsCommon = require('Spawns.Common')
+local SpawnsGroups = require('Spawns.Groups')
+local Tables = require('Common.Tables')
+local Teams = require('Players.Teams')
 
 local log = Logger.new('SecDet')
 log:SetLogLevel('DEBUG')
@@ -131,7 +132,7 @@ local Mode = {
 	Settings = {
 		Scenario = {
 			Min = 0,
-			Max = 3,
+			Max = 2,
 			Value = 0,
 			AdvancedSetting = false,
 		},
@@ -286,19 +287,6 @@ local function ArrayItemsWithPrefix(array, prefix)
 	return result
 end
 
-local function PickRandom(tbl)
-	local len = #tbl
-
-	if len == 0 then
-		return nil
-	end
-	if len == 1 then
-		return tbl[1]
-	end
-
-	return tbl[umath.random(len)]
-end
-
 local function DecorateUserData(userdata)
 	local mt = getmetatable(userdata) or {}
 	mt.__tostring = function(obj)
@@ -406,12 +394,12 @@ function Mode:PostInit()
 end
 
 function Mode:OnProcessCommand(command, param)
-	print("OnProcessCommand('" .. command .. "', '" .. param .. "')")
+	print('OnProcessCommand("' .. command .. '", "' .. param .. '")')
 
 	if not (command == 'reloadmissionscript' or command == 'mode') then
 		return
 	end
-	local param = tostring(param)
+	param = tostring(param)
 	local message = {}
 	local use_main = false
 	local duration = 6
@@ -419,51 +407,51 @@ function Mode:OnProcessCommand(command, param)
 	if param == 'help' then
 		use_main = true
 		duration = 60
-		table.insert(message, "==== admin " .. command .. " loc=NUMBER ====")
-		table.insert(message, "Select a location. 0=Random, Maximum=" .. self.NumberOfLocations)
-		table.insert(message, "")
-		table.insert(message, "==== admin " .. command .. " rand [obj|exfil] ====")
-		table.insert(message, "Randomize objectives|exfil")
-		table.insert(message, "")
-		table.insert(message, "==== admin " .. command .. " clear ====")
-		table.insert(message, "Clears the screen")
-		table.insert(message, "")
-		table.insert(message, "==== NOTE ====")
-		table.insert(message, "NOTE: In single player use `DebugGameCommand` instead of `admin`")
+		table.insert(message, '==== admin ' .. command .. ' loc=NUMBER ====')
+		table.insert(message, 'Select a location. 0=Random, Maximum=' .. self.NumberOfLocations)
+		table.insert(message, '')
+		table.insert(message, '==== admin ' .. command .. ' rand [obj|exfil] ====')
+		table.insert(message, 'Randomize objectives|exfil')
+		table.insert(message, '')
+		table.insert(message, '==== admin ' .. command .. ' clear ====')
+		table.insert(message, 'Clears the screen')
+		table.insert(message, '')
+		table.insert(message, '==== NOTE ====')
+		table.insert(message, 'NOTE: In single player use `DebugGameCommand` instead of `admin`')
 	elseif param == 'rand' or param == 'rand obj' then
-		table.insert(message, "Randomizing objectives")
+		table.insert(message, 'Randomizing objectives')
 		self:RandomizeObjectives()
 	elseif param == 'rand' or param == 'rand exfil' then
-		table.insert(message, "Randomizing exfil")
+		table.insert(message, 'Randomizing exfil')
 		self:RandomizeExfil()
 	elseif param == 'clear' then
 		duration = 0.001
-	elseif string.match(param,"^loc") then
-		local m = tonumber(string.match(param, "loc=(%d+)")) or 0
+	elseif string.match(param,'^loc') then
+		local m = tonumber(string.match(param, 'loc=(%d+)')) or 0
 		if m > 0 and m <= self.NumberOfLocations then
-			table.insert(message,"Admin selected location " .. tostring(m) .. ".")
+			table.insert(message,'Admin selected location ' .. tostring(m) .. '.')
 			self.SelectedLocationNumber = tonumber(m)
 		else
-			table.insert(message,"Admin selected invalid location. Using random one.")
+			table.insert(message,'Admin selected invalid location. Using random one.')
 			self.SelectedLocationNumber = 0
 		end
 		self:RandomizeObjectives()
 	else
-		table.insert(message, "Invalid parameter: " .. param)
-		table.insert(message,"Use admin " .. command .. " help")
+		table.insert(message, 'Invalid parameter: ' .. param)
+		table.insert(message,'Use admin ' .. command .. ' help')
 	end
 
-	gamemode.BroadcastGameMessage(table.concat(message, "\n"), 'Engine', -duration)
-	gamemode.BroadcastGameMessage(table.concat(message, "\n"), 'Upper', -duration)
+	gamemode.BroadcastGameMessage(table.concat(message, '\n'), 'Engine', -duration)
+	gamemode.BroadcastGameMessage(table.concat(message, '\n'), 'Upper', -duration)
 end
 
-function Mode:Validate(assert)
+function Mode:Validate(ensure)
 	for _, ip in ipairs(self.InsertionPoints.AnyVipScenario) do
 		local points = {}
 		for _, record in ipairs(self:GetPossibleExfilPoints(ip)) do
 			table.insert(points, record.Name)
 		end
-		assert("VIP " .. tostring(ip) .. " has escape route", #points > 0, points)
+		ensure('VIP ' .. tostring(ip) .. ' has escape route', #points > 0, points)
 	end
 end
 
@@ -519,9 +507,9 @@ function Mode:GetRandomVipPlayer()
 
 	local vipPlayer
 	if #playersWithoutInsertionPoint > 0 then
-		vipPlayer = PickRandom(playersWithoutInsertionPoint)
+		vipPlayer = Tables.RandomElement(playersWithoutInsertionPoint)
 	elseif #playersInReadyRoom > 0 then
-		vipPlayer = PickRandom(playersInReadyRoom)
+		vipPlayer = Tables.RandomElement(playersInReadyRoom)
 	else
 		return
 	end
@@ -539,7 +527,7 @@ function Mode:OnRoundStageSet(RoundStage)
 		self:RandomizeObjectives()
 	elseif RoundStage == 'PreRoundWait' then
 		self:EnsureVipPlayerPresent(true)
-		gamemode.SetDefaultRoundStageTime("InProgress", self.Settings.RoundTime.Value)
+		gamemode.SetDefaultRoundStageTime('InProgress', self.Settings.RoundTime.Value)
 
 		self:SetUpOpForStandardSpawns()
 		self:SpawnOpFor()
@@ -549,7 +537,7 @@ function Mode:OnRoundStageSet(RoundStage)
 			message = 'Protect ' .. self.VipPlayerName
 		end
 
-		gamemode.BroadcastGameMessage(message, "Upper", 11.5)
+		gamemode.BroadcastGameMessage(message, 'Upper', 11.5)
 	elseif RoundStage == 'InProgress' then
 		self.Objectives.Exfiltrate:SelectedPointSetActive(true)
 		self.PlayerTeams.BluFor.Script:RoundStart(
@@ -576,7 +564,7 @@ function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 	then
 		if CharacterController ~= nil then
 			local killedTeam = actor.GetTeamId(CharacterController)
-			local killerTeam = nil
+			local killerTeam
 			if KillerController ~= nil then
 				killerTeam = actor.GetTeamId(KillerController)
 			end
@@ -931,7 +919,7 @@ end
 function Mode:RandomizeObjectives()
 	log:Debug('RandomizeObjectives')
 
-	local eligibleVipPoints
+	local eligibleVipPoints = {}
 	if self.SelectedLocationNumber ~= 0 then
 		local ip = self.InsertionPoints.AnyVipScenario[self.SelectedLocationNumber]
 		self.SelectedLocationNumber = 0 -- reset it for next round
@@ -942,12 +930,12 @@ function Mode:RandomizeObjectives()
 		eligibleVipPoints = self.InsertionPoints.AnyVipScenario
 	elseif self.Settings.Scenario.Value == 1 then
 		eligibleVipPoints = self.InsertionPoints.VipTravelScenario
-	elseif self.Settings.Scenario.Value == 2 then
+	else -- 2
 		eligibleVipPoints = self.InsertionPoints.VipExfilScenario
 	end
 
 	-- Pick a random VIP InsertionPoint
-	self.ActiveVipInsertionPoint = PickRandom(eligibleVipPoints)
+	self.ActiveVipInsertionPoint = Tables.RandomElement(eligibleVipPoints)
 	self:RandomizeExfil()
 	self:ActivateInsertionPoints()
 end
@@ -958,11 +946,12 @@ function Mode:RandomizeExfil()
 	-- Find possible exfil points
 	local exfilTags = ArrayItemsWithPrefix(tags, 'Exfil-')
 	-- Select one
-	local exfilTag = PickRandom(exfilTags)
+	local exfilTag = Tables.RandomElement(exfilTags)
 
 	-- Activate exfil
 	local eligibleExfils = self.ExfilTagToExfils[exfilTag]
-	local exfilActorAndIndex = PickRandom(eligibleExfils)
+	
+	local exfilActorAndIndex = Tables.RandomElement(eligibleExfils)
 	log:Debug('Selected exfil', exfilActorAndIndex)
 	self.Objectives.Exfiltrate:SelectPoint(true, exfilActorAndIndex.Index)
 end
@@ -1038,12 +1027,12 @@ function Mode:ActivateInsertionPoints()
 		if havePSDFallback then
 			self.FallbackInsertionPoint = possibleFallbackPoints[1]
 		else
-			self.FallbackInsertionPoint = PickRandom(possibleFallbackPoints)
+			self.FallbackInsertionPoint = Tables.RandomElement(possibleFallbackPoints)
 		end
 		actor.SetActive(self.FallbackInsertionPoint, true)
-		log:Debug("Select fallback", self.FallbackInsertionPoint)
+		log:Debug('Select fallback', self.FallbackInsertionPoint)
 	else
-		log:Error("No fallback points found")
+		log:Error('No fallback points found')
 	end
 end
 
@@ -1058,7 +1047,7 @@ function Mode:UpdateCompletedObjectives()
 
 	if #completedObjectives > 0 then
 		gamemode.AddGameStat(
-				'CompleteObjectives=' .. table.concat(completedObjectives, ",")
+				'CompleteObjectives=' .. table.concat(completedObjectives, ',')
 		)
 	end
 end

@@ -12,12 +12,13 @@
 		4. Add orphaned (Group=None) PlayerStarts with tag 'Asset'
 ]]--
 
-local Teams = require('Players.Teams')
-local SpawnsGroups = require('Spawns.Groups')
+local AvoidFatality = require('Objectives.AvoidFatality')
+local Logger = require('Common.Logger')
+local NoSoftFail = require('Objectives.NoSoftFail')
 local ObjectiveExfiltrate = require('Objectives.Exfiltrate')
-local Logger = require("Common.Logger")
-local AvoidFatality = require("Objectives.AvoidFatality")
-local NoSoftFail = require("Objectives.NoSoftFail")
+local SpawnsGroups = require('Spawns.Groups')
+local Tables = require('Common.Tables')
+local Teams = require('Players.Teams')
 
 local log = Logger.new('AExtr')
 log:SetLogLevel('DEBUG')
@@ -25,10 +26,8 @@ log:SetLogLevel('DEBUG')
 -- clear cache for development
 package.loaded['SecurityDetail'] = nil
 
-local Tables = require("Common.Tables")
-
 -- Create a deep copy of the singleton
-local super = Tables.DeepCopy(require("SecurityDetail"))
+local super = Tables.DeepCopy(require('SecurityDetail'))
 
 -- Rename the logger
 super.Logger.name = 'AExtrBase'
@@ -73,13 +72,18 @@ end
 function Mode:PreInit()
 	log:Debug('PreInit')
 
+	self.Hello = 'Hello'
 	self.VipStartForThisRound = {}
 	self.VipStarts = {}
 	local vipStarts = gameplaystatics.GetAllActorsOfClassWithTag('GroundBranch.GBPlayerStart', 'Asset')
+	table.sort(vipStarts, function(a,b)
+		return actor.GetName(a) < actor.GetName(b)
+	end)
+
 	for _, start in ipairs(vipStarts) do
 		DecorateUserData(start)
 		table.insert(self.VipStarts, start)
-		log:Debug("VIP start", start)
+		log:Debug('VIP start', start)
 	end
 	self.NumberOfLocations = #self.VipStarts
 	self.SelectedLocationNumber = 0
@@ -115,7 +119,7 @@ function Mode:PreInit()
 		if actor.HasTag(ip, 'Hidden') or actor.HasTag(ip, 'VIP-Exfil') or actor.HasTag(ip, 'VIP-Travel') then
 			-- Hide 'SecurityDetail' spawns
 			actor.SetActive(ip, false)
-		elseif actor.HasTag('Asset') then
+		elseif actor.HasTag(ip, 'Asset') then
 			actor.SetActive(ip, true)
 		else
 			actor.SetActive(ip, true)
@@ -126,7 +130,7 @@ function Mode:PreInit()
 end
 --#endregion
 
-function Mode:Validate(assert)
+function Mode:Validate(ensure)
 	local assetInsertionPoints = {}
 	for _, ip in ipairs(gameplaystatics.GetAllActorsOfClass('GroundBranch.GBInsertionPoint')) do
 		DecorateUserData(ip)
@@ -134,8 +138,8 @@ function Mode:Validate(assert)
 			table.insert(assetInsertionPoints, ip)
 		end
 	end
-	assert("Has one Asset InsertionPoint", #assetInsertionPoints == 1, assetInsertionPoints)
-	assert("Has none-Asset InsertionPoints", #self.NonAssetInsertionPoints > 0, self.NonAssetInsertionPoints)
+	ensure('Has one Asset InsertionPoint', #assetInsertionPoints == 1, assetInsertionPoints)
+	ensure('Has none-Asset InsertionPoints', #self.NonAssetInsertionPoints > 0, self.NonAssetInsertionPoints)
 end
 
 --#region Common
@@ -175,7 +179,7 @@ end
 
 function Mode:RandomizeObjectives()
 	if self.SelectedLocationNumber == 0 then
-		self.SelectedLocationNumber = umath.random(#self.VipStarts)
+		self.SelectedLocationNumber = Tables.RandomKey(self.VipStarts)
 	end
 	self.VipStartForThisRound = self.VipStarts[self.SelectedLocationNumber]
 	log:Debug('RandomizeObjectives', self.VipStartForThisRound)

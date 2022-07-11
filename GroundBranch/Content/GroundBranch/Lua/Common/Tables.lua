@@ -2,6 +2,17 @@ local Tables = {}
 
 Tables.__index = Tables
 
+--[[
+    GroundBranch does not call `math.randomseed`.
+    Therefore we will seed it here via GroundBranch's proprietary
+    `urandom` API.
+
+    This workaround is not pretty, but effective enough.
+]]--
+if _G.umath then
+    math.randomseed(umath.random(9223372036854775807)) -- -1 + 2^63
+end
+
 ---Returns a copy of the provided table with shuffled entries.
 ---@param orderedTable table an ordered table that we want to shuffle.
 ---@return table shuffledTable a copy of the provided table with shuffled entries.
@@ -87,6 +98,47 @@ function Tables.Index(table, value)
     end
     return nil
 end
+
+--- Return random element from table
+function Tables.RandomElement(tbl)
+    assert(tbl ~= nil)
+
+    local list = {}
+    -- handle dictionaries. This is O(n) but should not matter.
+    for _, v in pairs(tbl) do
+        table.insert(list, v)
+    end
+
+    local len = #list
+    if len == 0 then
+        return nil
+    elseif len == 1 then
+        return list[1]
+    else
+        return list[math.random(len)]
+    end
+end
+
+--- Return random key/index from table
+function Tables.RandomKey(tbl)
+    assert(tbl ~= nil)
+
+    local keyList = {}
+    -- handle dictionaries. This is O(n) but should not matter.
+    for k, _ in pairs(tbl) do
+        table.insert(keyList, k)
+    end
+
+    local len = #keyList
+    if len == 0 then
+        return nil
+    elseif len == 1 then
+        return keyList[1]
+    else
+        return keyList[math.random(len)]
+    end
+end
+
 
 --[[
 Functions bellow are adapted Penlight's tablex <https://github.com/lunarmodules/Penlight>

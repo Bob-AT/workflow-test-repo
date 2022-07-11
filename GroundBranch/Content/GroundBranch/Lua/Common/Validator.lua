@@ -1,29 +1,29 @@
 --[[
 	Validator class for GameModeXyzValidate.lua scripts.
 	If the game mode provides a `Validate` method, it will be called.
-	The validator uses an `assert`-based testing strategy.
+	The validator uses an assertion-based testing strategy.
 --]]
 
 if false then
-	-- Assert example
-	-- assert(message, condition, optional_info)
-	assert("X greater 10", x > 10, x)
+	-- Ensure example
+	-- ensure(message, condition, optional_info)
+	ensure('X greater 10', x > 10, x)
 
-	-- for x == 15 it will print "OK: X greater 10 (15)"
+	-- for x == 15 it will print 'OK: X greater 10 (15)'
 
-	--for x = 5 it will print "FAILED: X greater 10 (5)" and add this message to
+	--for x = 5 it will print 'FAILED: X greater 10 (5)' and add this message to
 	-- the listOfErrors
 
 	-- Usage example: GameModeXyzValidate.lua
-	local validator = require("Common.Validator").new('GameModeXyz')
-	-- Optional: Add Assert-based API
-	validator.Add(function(gameMode, assert)
+	local validator = require('Common.Validator').new('GameModeXyz')
+	-- Optional: Add Ensure-based API
+	validator.Add(function(gameMode, ensure)
 		-- self is the game mode object
 		local allSpawns = gameplaystatics.GetAllActorsOfClass('GroundBranch.GBAISpawnPoint')
-		assert("AI spawns present", #allSpawns > 0)
+		ensure('AI spawns present', #allSpawns > 0)
 
 		local insertionPoints = gameplaystatics.GetAllActorsOfClass('GroundBranch.GBInsertionPoint')
-		assert("Insertion points present", #insertionPoints > 0, #insertionPoints)
+		ensure('Insertion points present', #insertionPoints > 0, #insertionPoints)
 	end)
 	-- Optional: Add Classic GroundBranch API
 	validator.Add({ ValidateLevel = function()
@@ -34,10 +34,10 @@ if false then
 	return validator
 end
 
-local Tables = require("Common.Tables")
+local Tables = require('Common.Tables')
 
 local Validator = {
-	separator = "--------------- ",
+	separator = '--------------- ',
 	typeTag = 'Common.Validator'
 }
 
@@ -52,8 +52,8 @@ function Validator.new(modeName)
 	self.gameMode = Tables.DeepCopy(require(modeName))
 
 	if self.gameMode['Validate'] then
-		self.validationList[1] = function(mode, assert)
-			self.gameMode.Validate(mode, assert)
+		self.validationList[1] = function(mode, ensure)
+			self.gameMode.Validate(mode, ensure)
 		end
 	end
 
@@ -74,7 +74,7 @@ function Validator:Add(validation)
 	end
 end
 
-function Validator:AssertFunction(msg, condition, info)
+function Validator:EnsureFunction(msg, condition, info)
 	local ok
 	if type(condition) == 'function' then
 		ok = condition()
@@ -84,9 +84,9 @@ function Validator:AssertFunction(msg, condition, info)
 
 	local builder = {}
 	if ok then
-		table.insert(builder, "OK: ")
+		table.insert(builder, 'OK: ')
 	else
-		table.insert(builder, "FAILED: ")
+		table.insert(builder, 'FAILED: ')
 	end
 	table.insert(builder, msg)
 
@@ -100,9 +100,9 @@ function Validator:AssertFunction(msg, condition, info)
 	end
 
 	if #info_builder > 0 then
-		table.insert(builder, " (")
-		table.insert(builder, table.concat(info_builder, ", "))
-		table.insert(builder, ")")
+		table.insert(builder, ' (')
+		table.insert(builder, table.concat(info_builder, ', '))
+		table.insert(builder, ')')
 	end
 
 	local line = table.concat(builder)
@@ -119,14 +119,14 @@ function Validator:ValidateLevel()
 	if self.gameMode.PreInit then
 		self.gameMode:PreInit()
 	else
-		print("(No PreInit method)")
+		print('(No PreInit method)')
 	end
 
 	print(sep .. 'PostInit')
 	if self.gameMode.PostInit then
 		self.gameMode:PostInit()
 	else
-		print("(No PostInit method)")
+		print('(No PostInit method)')
 	end
 
 	print(sep .. ' Running validation')
@@ -139,14 +139,14 @@ function Validator:ValidateLevel()
 		elseif type(validation) == 'function' then
 			local gameModeCopy = Tables.DeepCopy(self.gameMode)
 			validation(gameModeCopy, function(msg, condition, info)
-				self:AssertFunction(msg, condition, info)
+				self:EnsureFunction(msg, condition, info)
 			end)
 		end
 	end
 
 	print(sep .. ' Validation result')
 	if #self.errorList == 0 then
-		print("(No errors found)")
+		print('(No errors found)')
 	else
 		for idx, message in ipairs(self.errorList) do
 			print('[' .. idx .. '] ' .. message)

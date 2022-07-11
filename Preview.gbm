@@ -3,7 +3,10 @@
     "version" : "1032.4.30",
     "dependencies" : [
         "AssetExtraction.gbm",
-        "SecurityDetail.gbm"
+        "SecurityDetail.gbm",
+        "KillConfirmed.gbm",
+        "BreakOut.gbm",
+        "BreakThrough.gbm"
     ],
     "files" : [
     ]
