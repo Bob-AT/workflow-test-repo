@@ -126,7 +126,16 @@ function Mode:PreInit()
 end
 --#endregion
 
-function Mode:Validate()
+function Mode:Validate(assert)
+	local assetInsertionPoints = {}
+	for _, ip in ipairs(gameplaystatics.GetAllActorsOfClass('GroundBranch.GBInsertionPoint')) do
+		DecorateUserData(ip)
+		if actor.HasTag(ip, 'Asset') then
+			table.insert(assetInsertionPoints, ip)
+		end
+	end
+	assert("Has one Asset InsertionPoint", #assetInsertionPoints == 1, assetInsertionPoints)
+	assert("Has none-Asset InsertionPoints", #self.NonAssetInsertionPoints > 0, self.NonAssetInsertionPoints)
 end
 
 --#region Common

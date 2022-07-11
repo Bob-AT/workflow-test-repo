@@ -89,7 +89,7 @@ function Tables.Index(table, value)
 end
 
 --[[
-Table shallow copy and deep copy code adapted from Penlight's tablex <https://github.com/lunarmodules/Penlight>
+Functions bellow are adapted Penlight's tablex <https://github.com/lunarmodules/Penlight>
 
 Copyright (C) 2009-2016 Steve Donovan, David Manura.
 
@@ -170,6 +170,26 @@ end
 --- @return table new table
 function Tables.DeepCopy(t)
     return cycle_aware_copy(t,{})
+end
+
+--- modifies a table to be read only.
+-- This only offers weak protection. Tables can still be modified with
+-- `table.insert` and `rawset`.
+--
+-- *NOTE*: for Lua 5.1 length, pairs and ipairs will not work, since the
+-- equivalent metamethods are only available in Lua 5.2 and newer.
+-- @tab t the table
+-- @return the table read only (a proxy).
+function Tables.ReadOnly(t)
+    local mt = {
+        __index=t,
+        __newindex=function(t, k, v) error("Attempt to modify read-only table", 2) end,
+        __pairs=function() return pairs(t) end,
+        __ipairs=function() return ipairs(t) end,
+        __len=function() return #t end,
+        __metatable=false
+    }
+    return setmetatable({}, mt)
 end
 
 return Tables

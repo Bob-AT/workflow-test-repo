@@ -113,7 +113,6 @@ local NoSoftFail = require("Objectives.NoSoftFail")
 local log = Logger.new('SecDet')
 log:SetLogLevel('DEBUG')
 
-
 --#region Properties
 
 local Mode = {
