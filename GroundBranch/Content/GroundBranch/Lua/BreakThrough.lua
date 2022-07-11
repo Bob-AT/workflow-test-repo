@@ -184,7 +184,7 @@ function BreakThrough:OnRoundStageSet(RoundStage)
 		self:PreRoundCleanUp()
 		self.Objectives.Exfiltrate:SelectPoint(true)
 	elseif RoundStage == 'PreRoundWait' then
-		gamemode.SetDefaultRoundStageTime("InProgress", self.Settings.RoundTime.Value)
+		gamemode.SetDefaultRoundStageTime('InProgress', self.Settings.RoundTime.Value)
 		self:SetUpOpForSpawns()
 		self:SpawnOpFor()
 	elseif RoundStage == 'InProgress' then

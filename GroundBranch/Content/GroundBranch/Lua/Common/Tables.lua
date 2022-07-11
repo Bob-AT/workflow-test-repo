@@ -167,7 +167,7 @@ OR OTHER DEALINGS IN THE SOFTWARE.
 ]]--
 
 local function complain (idx,msg)
-    print("ERROR! Argument " .. idx .. " is not " + msg)
+    print('ERROR! Argument ' .. idx .. ' is not ' + msg)
 end
 
 local function check_meta (val)
@@ -183,7 +183,7 @@ end
 
 local function assert_arg_iterable (idx,val)
     if not types_is_iterable(val) then
-        complain(idx,"iterable")
+        complain(idx,'iterable')
     end
 end
 
@@ -235,7 +235,7 @@ end
 function Tables.ReadOnly(t)
     local mt = {
         __index=t,
-        __newindex=function(t, k, v) error("Attempt to modify read-only table", 2) end,
+        __newindex=function(t, k, v) error('Attempt to modify read-only table', 2) end,
         __pairs=function() return pairs(t) end,
         __ipairs=function() return ipairs(t) end,
         __len=function() return #t end,

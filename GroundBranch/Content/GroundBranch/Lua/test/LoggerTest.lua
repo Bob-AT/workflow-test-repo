@@ -1,4 +1,4 @@
-local test = UnitTest or error("Run with TestSuite.lua")
+local test = UnitTest or error('Run with TestSuite.lua')
 local Logger = require('Common.Logger')
 
 do

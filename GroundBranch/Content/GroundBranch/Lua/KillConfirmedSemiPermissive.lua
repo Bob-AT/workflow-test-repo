@@ -27,12 +27,12 @@ local AdminConfiguration = {
 }
 
 
-local Tables = require("Common.Tables")
-local AvoidFatality = require("Objectives.AvoidFatality")
-local NoSoftFail = require("Objectives.NoSoftFail")
+local Tables = require('Common.Tables')
+local AvoidFatality = require('Objectives.AvoidFatality')
+local NoSoftFail = require('Objectives.NoSoftFail')
 
 -- Create a deep copy of the singleton
-local super = Tables.DeepCopy(require("KillConfirmed"))
+local super = Tables.DeepCopy(require('KillConfirmed'))
 
 -- Use a separate loadout
 super.PlayerTeams.BluFor.Loadout='NoTeamCamouflage'

@@ -15,7 +15,7 @@ local UnitTest = {
 _G['UnitTest'] = UnitTest
 
 -- Hook into Logger to get deterministic tostring's (e.g: table 0xff00...)
-local Logger = require("Common.Logger")
+local Logger = require('Common.Logger')
 Logger.toStringFunction = function(obj)
     if type(obj) == 'table' or type(obj) == 'function' or
             type(obj) == 'userdata' or type(obj) == 'thread' then
@@ -27,7 +27,7 @@ Logger.toStringFunction = function(obj)
             UnitTest.cache[obj] = UnitTest.counter
         end
 
-        return string.format("%s 0xff%06x", type(obj), UnitTest.counter)
+        return string.format('%s 0xff%06x', type(obj), UnitTest.counter)
     else
         return tostring(obj)
     end
@@ -45,7 +45,7 @@ function UnitTest.AssertStringEquals(expected, actual)
     end
 
     if not (UnitTest.stdout == actual) then
-        error("Expected '" .. expected .. "' got '" .. actual .. "'")
+        error('Expected "' .. expected .. '" got "' .. actual .. '"')
     end
 end
 
@@ -104,17 +104,17 @@ function UnitTest.Test(name, condition)
     end
 
     if pass then
-        print("PASS: " .. fullname)
+        print('PASS: ' .. fullname)
         table.insert(UnitTest.pass, fullname)
     else
         local s = fullname .. message
-        print("FAIL: " .. s)
+        print('FAIL: ' .. s)
         table.insert(UnitTest.fail, s)
     end
 end
 
 function UnitTest.PrintSummary()
-    print(#UnitTest.pass .. " OK / " .. #UnitTest.fail .. " failed")
+    print(#UnitTest.pass .. ' OK / ' .. #UnitTest.fail .. ' failed')
     if os then
         if #UnitTest.fail > 0 then
             os.exit(1)

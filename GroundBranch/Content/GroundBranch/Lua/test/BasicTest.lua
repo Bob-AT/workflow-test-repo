@@ -1,4 +1,4 @@
-local test = UnitTest or error("Run with TestSuite.lua")
+local test = UnitTest or error('Run with TestSuite.lua')
 
 --
 -- Example tests

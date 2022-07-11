@@ -18,7 +18,7 @@ local LogLevels = {
 }
 
 local function split_print(s)
-    for str in string.gmatch(s, "([^\n]+)") do
+    for str in string.gmatch(s, '([^\n]+)') do
         print(str)
     end
 end

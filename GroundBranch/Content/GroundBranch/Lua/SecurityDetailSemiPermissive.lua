@@ -15,9 +15,9 @@ local AdminConfiguration = {
 
 package.loaded['SecurityDetail'] = nil -- clear cache
 
-local Tables = require("Common.Tables")
+local Tables = require('Common.Tables')
 
-local super = Tables.DeepCopy(require("SecurityDetail"))
+local super = Tables.DeepCopy(require('SecurityDetail'))
 for k, v in ipairs(AdminConfiguration) do super.Config[k] = v end
 super.Logger.name = 'SecDetSP'
 super.IsSemiPermissive = true

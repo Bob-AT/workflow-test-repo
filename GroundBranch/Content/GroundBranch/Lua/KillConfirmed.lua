@@ -228,7 +228,7 @@ function KillConfirmed:OnRoundStageSet(RoundStage)
 		self.Objectives.ConfirmKill:SetHvtCount(self.Settings.HVTCount.Value)
 		self.Objectives.ConfirmKill:ShuffleSpawns()
 	elseif RoundStage == 'PreRoundWait' then
-		gamemode.SetDefaultRoundStageTime("InProgress", self.Settings.RoundTime.Value)
+		gamemode.SetDefaultRoundStageTime('InProgress', self.Settings.RoundTime.Value)
 		self:SetUpOpForStandardSpawns()
 		self:SpawnOpFor()
 	elseif RoundStage == 'InProgress' then
@@ -559,13 +559,13 @@ function KillConfirmed:PreRoundCleanUp()
 	ai.CleanUp(self.HVT.Tag)
 	ai.CleanUp(self.AiTeams.OpFor.Tag)
 	for name, objective in pairs(self.Objectives) do
-		print("Resetting " .. name)
+		print('Resetting ' .. name)
 		objective:Reset()
 	end
 end
 
 function KillConfirmed:OnMissionSettingChanged(Setting, NewValue)
-	if Setting == "HVTCount" then
+	if Setting == 'HVTCount' then
 		print('HVT count set to ' .. NewValue .. ', updating spawns & objective markers.')
 		self.Objectives.ConfirmKill:SetHvtCount(self.Settings.HVTCount.Value)
 		self.Objectives.ConfirmKill:ShuffleSpawns()
@@ -587,7 +587,7 @@ function KillConfirmed:UpdateCompletedObjectives()
 
 	if #completedObjectives > 0 then
 		gamemode.AddGameStat(
-				'CompleteObjectives=' .. table.concat(completedObjectives, ",")
+				'CompleteObjectives=' .. table.concat(completedObjectives, ',')
 		)
 	end
 end

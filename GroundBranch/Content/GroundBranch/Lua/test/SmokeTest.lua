@@ -1,4 +1,4 @@
-local test = UnitTest or error("Run with TestSuite.lua")
+local test = UnitTest or error('Run with TestSuite.lua')
 local modes = {
 'AssetExtraction',
 'AssetExtractionSemiPermissive',
@@ -16,7 +16,7 @@ local modes = {
 
 for _, mode in ipairs(modes)
 do
-	test("Can load " .. mode .. ".lua", function()
+	test('Can load ' .. mode .. '.lua', function()
 		require(mode)
 	end)
 end
