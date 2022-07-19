@@ -160,6 +160,13 @@ function Teams:AwardPlayerScore(awardedPlayer, action)
     else
         message = action .. ' -' .. -scoreChange
     end
+
+    self.Score = self.Score + scoreChange
+    if self.Score < 0 then
+        self.Score = 0
+    end
+    self:SetAllowedToRespawn(self:CanRespawn())
+
     self:DisplayMessageToPlayer(awardedPlayer, message, 'Lower', 2.0, 'ScoreMessage')
     print('Changed player score by ' .. scoreChange)
 end
