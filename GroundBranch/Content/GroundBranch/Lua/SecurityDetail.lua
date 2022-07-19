@@ -498,6 +498,7 @@ end
 --#region Common
 
 function Mode:EnsureVipPlayerPresent(isLate)
+	log:Debug("EnsureVipPlayerPresent", self.VipPlayerName)
 	if self.VipPlayerName then
 		return
 	end
@@ -559,7 +560,7 @@ function Mode:OnRoundStageSet(RoundStage)
 		self:SetUpOpForStandardSpawns()
 		self:SpawnOpFor()
 
-		local message = 'No VIP. Patrol to Exfil.'
+		local message = 'No VIP. Move to Exfil.'
 		if self.VipPlayerName then
 			message = 'Protect ' .. self.VipPlayerName
 		end
@@ -792,7 +793,7 @@ function Mode:LogOut(Exiting)
 		gamemode.GetRoundStage() == 'InProgress'
 	then
 		if player.GetName(Exiting) == self.VipPlayerName then
-			gamemode.BroadcastGameMessage('VIP left', 'Upper', 15)
+			gamemode.BroadcastGameMessage('VIP left. Move to Exfil.', 'Upper', 15)
 		end
 
 		timer.Set(
