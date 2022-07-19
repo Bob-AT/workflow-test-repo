@@ -350,7 +350,7 @@ function Mode:PreInit()
 	for _, ip in ipairs(gameplaystatics.GetAllActorsOfClass('GroundBranch.GBInsertionPoint')) do
 		DecorateUserData(ip)
 
-		if not actor.HasTag('Asset') then
+		if not actor.HasTag(ip, 'Asset') then
 			table.insert(self.InsertionPoints.All, ip)
 
 			if actor.HasTag(ip, 'VIP-Exfil') then
@@ -498,15 +498,20 @@ end
 --#region Common
 
 function Mode:EnsureVipPlayerPresent(isLate)
-	if self.VipPlayerName or not self.Config.AutoSelectVip then
+	if self.VipPlayerName then
 		return
 	end
+	if not self.Config.AutoSelectVip then
+		return
+	end
+	self.VipPlayerName = "Pending..."
 
 	local vipPlayer = self:GetRandomVipPlayer()
 	local message = 'Picked random VIP'
 	if isLate then
 		message = message .. '. Might be too late to change insertion point.'
 	end
+	log:Debug("Message", message)
 	gamemode.BroadcastGameMessage(message, 'Engine', 11.5)
 	self.VipPlayerName = player.GetName(vipPlayer)
 	player.SetInsertionPoint(vipPlayer, self.ActiveVipInsertionPoint)
@@ -558,7 +563,7 @@ function Mode:OnRoundStageSet(RoundStage)
 		if self.VipPlayerName then
 			message = 'Protect ' .. self.VipPlayerName
 		end
-
+		log:Debug("Message", message)
 		gamemode.BroadcastGameMessage(message, 'Upper', 11.5)
 	elseif RoundStage == 'InProgress' then
 		self.Objectives.Exfiltrate:SelectedPointSetActive(true)
@@ -616,7 +621,9 @@ function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 					self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'KillStandard')
 				end
 			else
-				print('BluFor eliminated')
+				local ps = player.GetPlayerState ( CharacterController )
+				local playerName = player.GetName(ps)
+				log:Debug("Player dead", playerName)
 
 				if CharacterController == KillerController then
 					self.PlayerTeams.BluFor.Script:AwardPlayerScore(CharacterController, 'Accident')
@@ -626,12 +633,12 @@ function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 
 				self.PlayerTeams.BluFor.Script:PlayerDied(CharacterController, Character)
 
-				local ps = player.GetPlayerState ( CharacterController )
-				if player.GetName(ps) == self.VipPlayerName then
+				if playerName == self.VipPlayerName then
 					if killerTeam then
 						log:Info('VIP killed', self.VipPlayerName)
 						self.Objectives.ProtectVIP:ReportFatality()
 					elseif gamemode.GetRoundStage() == 'InProgress' and (not self.PlayerTeams.BluFor.Script:IsWipedOut()) then
+						log:Info("Doing nothing", killerTeam)
 						-- do nothing
 					end
 				end
@@ -657,6 +664,12 @@ end
 --#region Player Status
 
 function Mode:PlayerInsertionPointChanged(PlayerState, ip)
+	if gamemode.GetRoundStage() == 'PreRoundWait' then
+		return
+	end
+
+	log:Debug("PlayerInsertionPointChanged", gamemode.GetRoundStage())
+
 	local playerName = player.GetName(PlayerState)
 	if playerName == self.VipPlayerName then
 		self.VipPlayerName = false
@@ -709,10 +722,15 @@ function Mode:PlayerReadyStatusChanged(PlayerState, ReadyStatus)
 				false
 		)
 	elseif gamemode.GetRoundStage() == 'PreRoundWait' then
+		self:EnsureVipPlayerPresent(true)
+
+		local playerName = player.GetName(PlayerState)
+		log:Debug("Prep Latecomer", playerName)
+
 		local insertionPoint = self.FallbackInsertionPoint
 
 		-- Don't use fallback for late-coming VIP
-		if player.GetName(PlayerState) == self.VipPlayerName then
+		if playerName == self.VipPlayerName then
 			insertionPoint = self.ActiveVipInsertionPoint
 		end
 

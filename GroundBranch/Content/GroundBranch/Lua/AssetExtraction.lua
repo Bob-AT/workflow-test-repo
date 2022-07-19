@@ -35,6 +35,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]--
 
+-- clear cache for development
+package.loaded['SecurityDetail'] = nil
+
 local AvoidFatality = require('Objectives.AvoidFatality')
 local Logger = require('Common.Logger')
 local NoSoftFail = require('Objectives.NoSoftFail')
@@ -45,9 +48,6 @@ local Teams = require('Players.Teams')
 
 local log = Logger.new('AExtr')
 log:SetLogLevel('DEBUG')
-
--- clear cache for development
-package.loaded['SecurityDetail'] = nil
 
 -- Create a deep copy of the singleton
 local super = Tables.DeepCopy(require('SecurityDetail'))
@@ -95,7 +95,7 @@ end
 function Mode:PreInit()
 	log:Debug('PreInit')
 
-	self.Hello = 'Hello'
+	self.Config.AutoSelectVip = true
 	self.VipStartForThisRound = {}
 	self.VipStarts = {}
 	local vipStarts = gameplaystatics.GetAllActorsOfClassWithTag('GroundBranch.GBPlayerStart', 'Asset')
@@ -143,6 +143,7 @@ function Mode:PreInit()
 			-- Hide 'SecurityDetail' spawns
 			actor.SetActive(ip, false)
 		elseif actor.HasTag(ip, 'Asset') then
+			self.ActiveVipInsertionPoint = ip
 			actor.SetActive(ip, true)
 		else
 			actor.SetActive(ip, true)
@@ -173,25 +174,31 @@ end
 function Mode:GetSpawnInfo(PlayerState)
 	log:Info('GetSpawnInfo', player.GetName(PlayerState))
 
+	self:EnsureVipPlayerPresent(true)
+
 	if player.GetName(PlayerState) == self.VipPlayerName then
 		log:Info('Special pick for ', player.GetName(PlayerState))
 		return self.VipStartForThisRound
+	else
+		log:Debug('Regular pick for ', player.GetName(PlayerState))
 	end
+
 	return nil
 end
 
 function Mode:OnMissionSettingChanged()
-	self.config.AutoSelectVip = true
 	self:RandomizeObjectives()
 end
 
 function Mode:EnsureVipPlayerPresent(isLate)
-	if self.VipPlayerName then
+	if self.VipPlayerName or self.Config.AutoSelectVip == false then
 		return
 	end
-
+	self.VipPlayerName = "Pending ..."
 	local vipPlayer = self:GetRandomVipPlayer()
+	player.SetInsertionPoint(vipPlayer, self.ActiveVipInsertionPoint)
 	self.VipPlayerName = player.GetName(vipPlayer)
+	log:Debug("VIP auto-selected", self.VipPlayerName)
 
 	local message = 'Picked random Asset.'
 	if isLate then
