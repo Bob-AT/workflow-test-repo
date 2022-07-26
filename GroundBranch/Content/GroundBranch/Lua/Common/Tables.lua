@@ -9,8 +9,12 @@ Tables.__index = Tables
 
     This workaround is not pretty, but effective enough.
 ]]--
-if _G.umath then
-    math.randomseed(umath.random(9223372036854775807)) -- -1 + 2^63
+do
+    if _G.umath then
+        local seed = umath.random(2147483647) -- int32 max
+        print("Seed is: " .. seed)
+        math.randomseed(seed)
+    end
 end
 
 ---Returns a copy of the provided table with shuffled entries.

@@ -208,10 +208,11 @@ function Mode:EnsureVipPlayerPresent(isLate)
 end
 
 function Mode:RandomizeObjectives()
-	if self.SelectedLocationNumber == 0 then
-		self.SelectedLocationNumber = Tables.RandomKey(self.VipStarts)
+	local nr = self.SelectedLocationNumber
+	if nr == 0 then
+		nr = Tables.RandomKey(self.VipStarts)
 	end
-	self.VipStartForThisRound = self.VipStarts[self.SelectedLocationNumber]
+	self.VipStartForThisRound = self.VipStarts[nr]
 	log:Debug('RandomizeObjectives', self.VipStartForThisRound)
 	self:RandomizeExfil()
 end
