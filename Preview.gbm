@@ -4,6 +4,9 @@
     "dependencies" : [
         "AssetExtraction.gbm",
         "SecurityDetail.gbm"
+        "BreakOut.gbm"
+        "BreakThrough.gbm"
+        "KillConfirmed.gbm"
 
     ],
     "files" : [

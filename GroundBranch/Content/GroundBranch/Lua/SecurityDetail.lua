@@ -241,7 +241,8 @@ local Mode = {
 	PlayerTeams = {
 		BluFor = {
 			TeamId = 1,
-			Loadout = 'NoTeamCamouflage',
+			--Loadout = 'NoTeamCamouflage',
+			Loadout = 'NoTeam',
 			Script = nil
 		},
 	},
@@ -413,6 +414,11 @@ function Mode:PostInit()
 		gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'NoCollateralDamage', 1)
 	end
 	gamemode.AddGameObjective(self.PlayerTeams.BluFor.TeamId, 'ExfiltrateBluFor', 1)
+
+	local laptops = gameplaystatics.GetAllActorsOfClass('/Game/GroundBranch/Props/Electronics/MilitaryLaptop/BP_Laptop_Usable.BP_Laptop_Usable_C')
+	for _, laptop in ipairs(laptops) do
+		actor.SetActive(laptop, false)
+	end
 end
 
 function Mode:OnProcessCommand(command, param)

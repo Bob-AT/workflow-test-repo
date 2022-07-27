@@ -57,8 +57,6 @@ local NoSoftFail = require('Objectives.NoSoftFail')
 -- Create a deep copy of the singleton
 local super = Tables.DeepCopy(require('KillConfirmed'))
 
--- Use a separate loadout
-super.PlayerTeams.BluFor.Loadout='NoTeamCamouflage'
 super.Settings.RespawnCost.Value = 100000
 
 -- Add new score types
