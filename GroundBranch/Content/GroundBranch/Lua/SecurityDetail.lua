@@ -581,6 +581,14 @@ function Mode:OnRoundStageSet(RoundStage)
 			true,
 			false
 		)
+		-- check if anybody survived the PreRoundWait
+		timer.Set(
+				self.Timers.CheckBluForCount.Name,
+				self,
+				self.CheckBluForCountTimer,
+				self.Timers.CheckBluForCount.TimeStep,
+				false
+		)
 	end
 end
 
