@@ -17,7 +17,7 @@ VARIATIONS = [
      ('HeadGear', 'HeadGear:BP_Hat_BaseBall_Rev', 'Tan')],
     # 4
     [('Shirt', 'Shirt:BP_Shirt_ButtonUp_Plain', 'Black'),
-     ('HeadGear', None, None),
+     ('HeadGear', 'HeadGear:BP_Hat_WatchCap', 'Black'),
      ('Belt', 'Belt:BP_Battlebelt_TF', 'Black')],
     # 5
     [('Shirt', 'Shirt:BP_Shirt_ButtonUp_Plain', 'Navy'),
@@ -36,7 +36,7 @@ VARIATIONS = [
     # 8
     [('Shirt', 'Shirt:BP_Shirt_Under', 'Khaki'),
      ('Pants', 'Pants:BP_Pants_Jeans', 'Blue'),
-     ('HeadGear', None, None),
+     ('HeadGear', 'HeadGear:BP_Hat_WatchCap', 'Black'),
      ]
 ]
 
