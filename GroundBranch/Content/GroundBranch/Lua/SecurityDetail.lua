@@ -518,9 +518,9 @@ function Mode:EnsureVipPlayerPresent(isLate)
 	self.VipPlayerName = "Pending..."
 
 	local vipPlayer = self:GetRandomVipPlayer()
-	local message = 'Picked random VIP'
+	local message = 'PickedRandom'
 	if isLate then
-		message = message .. '. Might be too late to change insertion point.'
+		message = 'PickedRandomLate'
 	end
 	log:Debug("Message", message)
 	gamemode.BroadcastGameMessage(message, 'Engine', 11.5)
@@ -570,10 +570,14 @@ function Mode:OnRoundStageSet(RoundStage)
 		self:SetUpOpForStandardSpawns()
 		self:SpawnOpFor()
 
-		local message = 'No VIP. Move to Exfil.'
+		local message = "NoVipMoveToExfil"
 		if self.VipPlayerName then
-			message = 'Protect ' .. self.VipPlayerName
+			message = gamemode.FormatString({
+				FormatString = "ProtectVIP",
+				Name = self.VipPlayerName
+			})
 		end
+
 		log:Debug("Message", message)
 		gamemode.BroadcastGameMessage(message, 'Upper', 11.5)
 	elseif RoundStage == 'InProgress' then
@@ -620,7 +624,10 @@ function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 					self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'CollateralDamage')
 					self.PlayerTeams.BluFor.Script:AwardTeamScore('CollateralDamage')
 
-					local message = 'Collateral damage by player ' .. player.GetName(KillerController)
+					local message = gamemode.FormatString({
+						FormatString = "CollateralDamageBy",
+						Name = player.GetName(KillerController)
+					})
 					self.PlayerTeams.BluFor.Script:DisplayMessageToAllPlayers(message, 'Engine', 5.0, 'Always')
 
 					if self.Objectives.AvoidFatality:GetFatalityCount() >= self.Config.CollateralDamageThreshold then

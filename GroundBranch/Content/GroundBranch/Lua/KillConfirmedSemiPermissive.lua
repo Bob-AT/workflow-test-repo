@@ -123,7 +123,10 @@ function Mode:OnCharacterDied(Character, CharacterController, KillerController)
 				self.PlayerTeams.BluFor.Script:AwardPlayerScore(KillerController, 'CollateralDamage')
 				self.PlayerTeams.BluFor.Script:AwardTeamScore('CollateralDamage')
 
-				local message = 'Collateral damage by ' .. player.GetName(KillerController)
+				local message = gamemode.FormatString({
+					FormatString = "CollateralDamageBy",
+					Name = player.GetName(KillerController)
+				})
 				self.PlayerTeams.BluFor.Script:DisplayMessageToAllPlayers(message, 'Engine', 5.0, 'ScoreMilestone')
 
 				if self.Objectives.AvoidFatality:GetFatalityCount() >= self.Config.CollateralDamageThreshold then

@@ -204,9 +204,9 @@ function Mode:EnsureVipPlayerPresent(isLate)
 	self.VipPlayerName = player.GetName(vipPlayer)
 	log:Debug("VIP auto-selected", self.VipPlayerName)
 
-	local message = 'Picked random Asset.'
+	local message = 'PickedRandom'
 	if isLate then
-		message = message .. '..'
+		message = 'PickedRandomLate'
 	end
 	gamemode.BroadcastGameMessage(message, 'Engine', 11.5)
 end
