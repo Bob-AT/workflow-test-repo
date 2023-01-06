@@ -186,6 +186,10 @@ function Mode:GetSpawnInfo(PlayerState)
 	return nil
 end
 
+function Mode:OnMissionSettingsChanged()
+	self:OnMissionSettingChanged()
+end
+
 function Mode:OnMissionSettingChanged()
 	self:RandomizeObjectives()
 end

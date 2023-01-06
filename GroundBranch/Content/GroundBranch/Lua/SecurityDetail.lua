@@ -954,8 +954,16 @@ function Mode:PreRoundCleanUp()
 	end
 end
 
+function Mode:OnMissionSettingsChanged(ChangedSettingsTable)
+	for k, v in pairs(ChangedSettingsTable) do
+		if v ~= nil then
+			self:OnMissionSettingChanged(k, v)
+		end
+	end
+end
+
 function Mode:OnMissionSettingChanged(Setting, NewValue)
-	--print('Setting ' .. Setting)
+	-- print("OnMissionSettingChanged " .. Setting .. " -> " .. NewValue)
 	if Setting == 'Scenario' then
 		if self.Settings.Scenario.LastValue ~= NewValue then
 			self:RandomizeObjectives()

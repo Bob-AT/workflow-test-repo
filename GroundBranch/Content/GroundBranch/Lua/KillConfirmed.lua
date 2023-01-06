@@ -587,7 +587,16 @@ function KillConfirmed:PreRoundCleanUp()
 	end
 end
 
+function KillConfirmed:OnMissionSettingsChanged(ChangedSettingsTable)
+	for k, v in pairs(ChangedSettingsTable) do
+		if v ~= nil then
+			self:OnMissionSettingChanged(k, v)
+		end
+	end
+end
+
 function KillConfirmed:OnMissionSettingChanged(Setting, NewValue)
+	-- print("OnMissionSettingChanged " .. Setting .. " -> " .. NewValue)
 	if Setting == 'HVTCount' then
 		print('HVT count set to ' .. NewValue .. ', updating spawns & objective markers.')
 		self.Objectives.ConfirmKill:SetHvtCount(self.Settings.HVTCount.Value)
