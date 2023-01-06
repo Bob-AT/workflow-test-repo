@@ -20,9 +20,12 @@
 !GroundBranch/Content/GroundBranch/AI/Loadouts/*/*.py
 !GroundBranch/Content/GroundBranch/AI/Loadouts/*/*.json
 !GroundBranch/Content/GroundBranch/DefaultLoadouts/*.kit
-## Manifest files
+## Helper files
 !*.gbm
+!*.json
+!*.sh
 !*.py
+!uninstall-gbgmc-files.cmd
 
 # Ground Branch default files that would otherwise be included
 ## Default GameMode scripts
