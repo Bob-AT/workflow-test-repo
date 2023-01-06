@@ -362,6 +362,9 @@ function Mode:PreInit()
 			else
 				table.insert(self.InsertionPoints.NonVip, ip)
 			end
+		else
+			-- Disable Asset point (used by `Asset extraction` game mode)
+			actor.SetActive(ip, false)
 		end
 	end
 
