@@ -68,7 +68,7 @@ local KillConfirmed = {
 		RespawnCost = {
 			Min = 0,
 			Max = 10000,
-			Value = 1000,
+			Value = 10000,
 			AdvancedSetting = true,
 		},
 		DisplayScoreMessage = {
