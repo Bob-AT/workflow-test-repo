@@ -1,6 +1,8 @@
 Key,SourceString,Comment
-"SecurityDetail","Security Detail",""
-"SecurityDetailSemiPermissive","SecurityDetail (Semi-Permissive)",""
+"gamemode_securitydetail","Security Detail",""
+"gamemode_description_securitydetail","[Solo/Co-Op] Protect the principal.",""
+"gamemode_securitydetailsemipermissive","Security Detail (Semi-Permissive)",""
+"gamemode_description_securitydetailsemipermissive","[Solo/Co-Op] Protect the principal.",""
 "missionsetting_opforpreset","Expected Resistance","Opsboard"
 "missionsetting_opforpreset_0","Underwhelming","Opsboard"
 "missionsetting_opforpreset_1","Low","Opsboard"

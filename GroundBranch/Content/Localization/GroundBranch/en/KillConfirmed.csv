@@ -1,6 +1,8 @@
 Key,SourceString,Comment
-"KillConfirmed","Kill Confirmed",""
-"gamemode_killconfirmedsemipermissive","Kill Confirmed (Semi-Permissive)","not used at the moment"
+"gamemode_killconfirmed","Kill Confirmed",""
+"gamemode_description_killconfirmed","[Solo/Co-Op] Locate, neutralize and confirm elimination of all HVTs in the AO.",""
+"gamemode_killconfirmedsemipermissive","Kill Confirmed (Semi-Permissive)",""
+"gamemode_description_killconfirmedsemipermissive","[Solo/Co-Op] Locate, neutralize and confirm elimination of all HVTs in the AO. Avoid collateral damage.",""
 "missionsetting_hvtcount","Expected HVTs","Opsboard"
 "missionsetting_opforpreset","Expected Resistance","Opsboard"
 "missionsetting_opforpreset_0","Underwhelming","Opsboard"

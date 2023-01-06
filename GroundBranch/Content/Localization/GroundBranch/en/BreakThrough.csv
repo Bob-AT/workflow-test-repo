@@ -1,5 +1,6 @@
 Key,SourceString,Comment
-"BreakOut","Break Out",""
+"gamemode_breakthrough","Break Through",""
+"gamemode_description_breakthrough","[Solo/Co-Op] Traverse through a hostile area.",""
 "missionsetting_opforpreset","Expected Resistance","Opsboard"
 "missionsetting_opforpreset_0","Underwhelming","Opsboard"
 "missionsetting_opforpreset_1","Low","Opsboard"

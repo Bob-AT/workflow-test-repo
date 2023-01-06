@@ -1,5 +1,6 @@
 Key,SourceString,Comment
-"BreakOut","Break Out",""
+"gamemode_breakout","Break Out",""
+"gamemode_description_breakout","[Solo/Co-Op] Break out from captivity.",""
 "missionsetting_opforpreset","Expected Resistance","Opsboard"
 "missionsetting_opforpreset_0","Underwhelming","Opsboard"
 "missionsetting_opforpreset_1","Low","Opsboard"

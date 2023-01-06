@@ -1,6 +1,8 @@
 Key,SourceString,Comment
-"AssetExtraction","Asset Extraction",""
-"AssetExtractionSemiPermissive","AssetExtraction (Semi-Permissive)",""
+"gamemode_assetextraction","Asset Extraction",""
+"gamemode_description_assetextraction","[Solo/Co-Op] Extract the asset.",""
+"gamemode_assetextractionsemipermissive","Asset Extraction (Semi-Permissive)",""
+"gamemode_description_assetextractionsemipermissive","[Solo/Co-Op] Extract the asset.",""
 "missionsetting_opforpreset","Expected Resistance","Opsboard"
 "missionsetting_opforpreset_0","Underwhelming","Opsboard"
 "missionsetting_opforpreset_1","Low","Opsboard"
