@@ -1,0 +1,42 @@
+{
+	"name" : "GBGMC",
+	"version" : "1",
+	"dependencies" : [],
+	"files" : [
+		"GroundBranch/Content/GroundBranch/AI/Loadouts/EurAsi/*.kit",
+		"GroundBranch/Content/GroundBranch/AI/Loadouts/MidEas/*.kit",
+		"GroundBranch/Content/GroundBranch/AI/Loadouts/Narcos/*.kit",
+
+		"GroundBranch/Content/GroundBranch/DefaultLoadouts/BreakOut.kit",
+		"GroundBranch/Content/GroundBranch/DefaultLoadouts/NoTeamCamouflage.kit",
+		"GroundBranch/Content/GroundBranch/GameMode/*.lua",
+
+		"GroundBranch/Content/GroundBranch/Lua/Common/*.lua",
+		"GroundBranch/Content/GroundBranch/Lua/Objectives/*.lua",
+		"GroundBranch/Content/GroundBranch/Lua/Players/*.lua",
+		"GroundBranch/Content/GroundBranch/Lua/Spawns/*.lua",
+
+		"GroundBranch/Content/GroundBranch/Lua/AssetExtraction.lua",
+		"GroundBranch/Content/GroundBranch/Lua/AssetExtractionSemiPermissive.lua",
+		"GroundBranch/Content/GroundBranch/Lua/BreakOut.lua",
+		"GroundBranch/Content/GroundBranch/Lua/BreakThrough.lua",
+		"GroundBranch/Content/GroundBranch/Lua/KillConfirmed.lua",
+		"GroundBranch/Content/GroundBranch/Lua/KillConfirmedSemiPermissive.lua",
+		"GroundBranch/Content/GroundBranch/Lua/SecurityDetail.lua",
+		"GroundBranch/Content/GroundBranch/Lua/SecurityDetailSemiPermissive.lua",
+
+		"GroundBranch/Content/GroundBranch/Mission/*/AssetExtraction*.mis",
+		"GroundBranch/Content/GroundBranch/Mission/*/BreakOut*.mis",
+		"GroundBranch/Content/GroundBranch/Mission/*/BreakThrough*.mis",
+		"GroundBranch/Content/GroundBranch/Mission/*/KillConfirmed*.mis",
+		"GroundBranch/Content/GroundBranch/Mission/*/SecurityDetail*.mis",
+
+		"GroundBranch/Content/Localization/GroundBranch/en/AssetExtraction.csv",
+		"GroundBranch/Content/Localization/GroundBranch/en/BreakOut.csv",
+		"GroundBranch/Content/Localization/GroundBranch/en/BreakThrough.csv",
+		"GroundBranch/Content/Localization/GroundBranch/en/KillConfirmed.csv",
+		"GroundBranch/Content/Localization/GroundBranch/en/SecurityDetail.csv",
+
+		"uninstall-gbgmc-files.cmd"
+	]
+}
