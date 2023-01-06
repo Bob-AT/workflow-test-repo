@@ -141,8 +141,9 @@ log:SetLogLevel('DEBUG')
 local Mode = {
 	UseReadyRoom = true,
 	UseRounds = true,
-	MissionTypeDescription = '[Solo/Co-Op] Extract the principal',
 	StringTables = {'SecurityDetail'},
+	GameModeAuthor = "'(c) Bob/A <https://gbgmc.github.io/>\n[Solo/Co-Op] Protect the principal.",
+	GameModeType = "PVE",
 	Config = {
 		-- placeholder
 		SoftFailEnabled = true,

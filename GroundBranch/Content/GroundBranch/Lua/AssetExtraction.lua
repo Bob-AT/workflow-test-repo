@@ -77,7 +77,7 @@ super.Settings = {
 	},
 }
 -- Use separate MissionTypeDescription and StringTables
-super.MissionTypeDescription = '[Solo/Co-Op] Extract the asset'
+super.GameModeAuthor = '(c) Bob/A <https://gbgmc.github.io/>\n[Solo/Co-Op] Extract the asset.'
 super.StringTables = {'AssetExtraction'}
 super.IsSemiPermissive = false
 
