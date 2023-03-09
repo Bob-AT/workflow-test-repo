@@ -1,4 +1,4 @@
-name: Test and package
+name: Test
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ "main", "release" ]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     container: golang:1.20
 
@@ -17,24 +17,16 @@ jobs:
       - name: Install Lua
         run: apt update && apt install -y lua5.2
 
-      - name: Get gb-tools
-        run: |
-          git clone --depth=1 https://github.com/gbgmc/gb-tools.git
-          (cd gb-tools && go build && cp gb-tools ../gbt)
-
-      - name: Run tests
+      - name: Run Lua tests
         run: |
           ( cd GroundBranch/Content/GroundBranch/Lua && lua TestSuite.lua )
 
-      - name: Run GBT
+
+      - name: Get and build gb-tools
+        run: |
+          git clone --depth=1 https://github.com/gbgmc/gb-tools.git
+          (cd gb-tools && go build && cp gb-tools ../gbt)
+      
+      - name: Run gb-tools
         run: |
           ./gbt pack GBGMC.json
-          mv -v GBGMC.zip GBGMC-SNAPSHOT-`date --iso`-`git describe`.zip
-
-      - name: Archive built ZIP files
-        uses: actions/upload-artifact@v3
-        with:
-          name: test
-          path: |
-            *.zip
-          retention-days: 3
