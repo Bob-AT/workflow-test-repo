@@ -16,7 +16,7 @@ test('Foo', function()
 end)
 
 test('Foo', function()
-    print('Hello')
+    print('Hellox')
     print('World')
     test.AssertStdout({ 'Hello', 'World' })
 end)
