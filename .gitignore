@@ -1,6 +1,6 @@
 # Flip the gitignore on it's head - ignore everything
 *
-# But check folders
+# But check folders ,,,
 !*/
 
 # Keep
